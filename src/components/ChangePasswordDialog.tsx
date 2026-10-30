@@ -74,7 +74,7 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
       // Regra obrigatória: NUNCA exibir a nova senha na mensagem de confirmação
       toast({
         title: 'Senha alterada com sucesso!',
-        description: 'A sua senha de acesso ao CEP-Coligação Espírita Progressista foi atualizada.',
+        description: 'Sua senha de acesso ao Sistema Infanto-CEP foi atualizada.',
       })
 
       handleReset()

@@ -231,7 +231,7 @@ export default function SettingsPage() {
       await settingsService.deleteUser(userToDelete.id)
       toast({
         title: 'Operador excluído com sucesso!',
-        description: `A conta de ${userToDelete.name} foi removida da plataforma CEP-Coligação Espírita Progressista.`,
+        description: `A conta de ${userToDelete.name} foi removida do Sistema Infanto-CEP.`,
       })
       setDeleteModalOpen(false)
       setUserToDelete(null)
@@ -303,7 +303,7 @@ export default function SettingsPage() {
       await saveSchoolYearAndRecesses(yearForm, updatedRecesses)
       toast({
         title: 'Ano Letivo e Feriados Atualizados!',
-        description: `Configurações para ${yearForm.year} salvas com sucesso no CEP-Coligação Espírita Progressista.`,
+        description: `Configurações para ${yearForm.year} salvas com sucesso no Sistema Infanto-CEP.`,
       })
     } catch (err: any) {
       toast({

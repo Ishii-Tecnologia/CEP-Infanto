@@ -109,7 +109,7 @@ export default function CalendarPage() {
       toast({
         title: 'Configurações de salas salvas!',
         description:
-          'Os novos nomes/rótulos e faixas etárias foram atualizados no sistema CEP-Coligação Espírita Progressista.',
+          'Os novos nomes/rótulos e faixas etárias foram atualizados no Sistema Infanto-CEP.',
       })
       setClassroomsModalOpen(false)
     } catch (err: any) {
