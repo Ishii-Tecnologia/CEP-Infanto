@@ -90,6 +90,20 @@ export const settingsService = {
     }
   },
 
+  async changeOwnPassword(oldPassword: string, newPassword: string): Promise<void> {
+    if (!pb.authStore.record?.id) {
+      throw new Error('Nenhum usuário logado.')
+    }
+    const currentUserId = pb.authStore.record.id
+
+    // Atualização com validação da senha atual pelo PocketBase
+    await pb.collection('users').update(currentUserId, {
+      oldPassword,
+      password: newPassword,
+      passwordConfirm: newPassword,
+    })
+  },
+
   async requestPasswordReset(email: string): Promise<void> {
     await pb.collection('users').requestPasswordReset(email)
   },

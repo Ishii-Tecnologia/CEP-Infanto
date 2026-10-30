@@ -53,6 +53,13 @@ export default function CalendarPage() {
     materials: '',
   })
 
+  // Modal de Edição do Tema e Bloco Temático da Aula
+  const [editLessonOpen, setEditLessonOpen] = useState(false)
+  const [lessonForm, setLessonForm] = useState({
+    central_theme: '',
+    thematic_block: '',
+  })
+
   // Modal de Configuração das Salas (Nome e Faixa Etária)
   const [classroomsModalOpen, setClassroomsModalOpen] = useState(false)
   const [editingClassrooms, setEditingClassrooms] = useState(classrooms)
@@ -159,6 +166,42 @@ export default function CalendarPage() {
       toast({
         title: 'Erro',
         description: 'Não foi possível reativar a aula.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleOpenEditLesson = () => {
+    if (!selectedLesson) return
+    setLessonForm({
+      central_theme: selectedLesson.central_theme || '',
+      thematic_block: selectedLesson.thematic_block || '',
+    })
+    setEditLessonOpen(true)
+  }
+
+  const handleSaveLesson = async () => {
+    if (!selectedLesson) return
+    try {
+      await lessonService.update(selectedLesson.id, {
+        central_theme: lessonForm.central_theme,
+        thematic_block: lessonForm.thematic_block,
+      })
+      toast({
+        title: 'Aula atualizada!',
+        description: 'O tema central e o bloco temático foram salvos.',
+      })
+      setEditLessonOpen(false)
+      setSelectedLesson({
+        ...selectedLesson,
+        central_theme: lessonForm.central_theme,
+        thematic_block: lessonForm.thematic_block,
+      })
+      loadLessons()
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao salvar aula',
+        description: err?.message || 'Não foi possível atualizar a aula.',
         variant: 'destructive',
       })
     }
@@ -333,8 +376,17 @@ export default function CalendarPage() {
                     </div>
                   </div>
 
-                  <CardTitle className="text-xl font-bold mt-2">
-                    {selectedLesson.central_theme}
+                  <CardTitle className="text-xl font-bold mt-2 flex items-center justify-between">
+                    <span>{selectedLesson.central_theme}</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleOpenEditLesson}
+                      className="h-8 text-xs text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                    >
+                      <Edit3 className="h-3.5 w-3.5 mr-1" />
+                      Editar Aula
+                    </Button>
                   </CardTitle>
                   <CardDescription className="text-xs text-slate-600 dark:text-slate-400">
                     Bloco Temático: <strong>{selectedLesson.thematic_block}</strong>
@@ -482,6 +534,50 @@ export default function CalendarPage() {
             </Button>
             <Button size="sm" variant="destructive" onClick={handleCancelLesson}>
               Confirmar Cancelamento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Editar Tema e Bloco da Aula (Sábado) */}
+      <Dialog open={editLessonOpen} onOpenChange={setEditLessonOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Editar Aula do Sábado</DialogTitle>
+            <DialogDescription className="text-xs">
+              Atualize o tema central e o bloco temático da aula de{' '}
+              {selectedLesson ? formatDate(selectedLesson.date) : ''}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-2 space-y-3 text-xs">
+            <div className="space-y-1">
+              <Label>Tema Central da Aula</Label>
+              <Input
+                value={lessonForm.central_theme}
+                onChange={(e) => setLessonForm({ ...lessonForm, central_theme: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label>Bloco Temático</Label>
+              <Input
+                value={lessonForm.thematic_block}
+                onChange={(e) => setLessonForm({ ...lessonForm, thematic_block: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setEditLessonOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSaveLesson}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              Salvar Aula
             </Button>
           </DialogFooter>
         </DialogContent>

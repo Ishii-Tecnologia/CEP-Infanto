@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { familyService, childService } from '@/services/families'
 import { Family, Guardian, Child, ClassroomId } from '@/types'
+import { Pencil } from 'lucide-react'
 import {
   calculateAgeOnCutoffDate,
   classifyClassroomByBirthDate,
@@ -58,6 +59,7 @@ export default function FamiliesPage() {
 
   // Estado do Wizard de Cadastro em 4 etapas
   const [wizardOpen, setWizardOpen] = useState(false)
+  const [editingFamily, setEditingFamily] = useState<Family | null>(null)
   const [currentStep, setCurrentStep] = useState(1)
   const [saving, setSaving] = useState(false)
 
@@ -78,6 +80,7 @@ export default function FamiliesPage() {
 
   const [wizardGuardians, setWizardGuardians] = useState<
     Array<{
+      id?: string
       name: string
       relationship: string
       phone: string
@@ -98,6 +101,7 @@ export default function FamiliesPage() {
 
   const [wizardChildren, setWizardChildren] = useState<
     Array<{
+      id?: string
       name: string
       birth_date: string
       classroom: ClassroomId
@@ -140,6 +144,7 @@ export default function FamiliesPage() {
   }
 
   const handleOpenWizard = () => {
+    setEditingFamily(null)
     setCurrentStep(1)
     setWizardFamily({
       reference_name: '',
@@ -193,6 +198,7 @@ export default function FamiliesPage() {
         email: '',
         is_emergency_contact: false,
         photo_url: '',
+        id: undefined,
       },
     ])
   }
@@ -214,6 +220,7 @@ export default function FamiliesPage() {
         medical_notes: '',
         image_authorized: true,
         photo_url: '',
+        id: undefined,
       },
     ])
   }
@@ -236,22 +243,98 @@ export default function FamiliesPage() {
 
     try {
       setSaving(true)
-      await familyService.create(wizardFamily, wizardGuardians, wizardChildren)
-      toast({
-        title: 'Família cadastrada com sucesso!',
-        description: 'Os responsáveis e crianças foram vinculados e classificados.',
-      })
+      if (editingFamily) {
+        await familyService.updateComplete(
+          editingFamily.id,
+          wizardFamily,
+          wizardGuardians,
+          wizardChildren,
+        )
+        toast({
+          title: 'Ficha atualizada com sucesso!',
+          description: 'As informações da família, responsáveis e crianças foram salvas.',
+        })
+      } else {
+        await familyService.create(wizardFamily, wizardGuardians, wizardChildren)
+        toast({
+          title: 'Família cadastrada com sucesso!',
+          description: 'Os responsáveis e crianças foram vinculados e classificados.',
+        })
+      }
       setWizardOpen(false)
+      setSelectedFamily(null)
       loadFamilies()
     } catch (err: any) {
       toast({
-        title: 'Erro ao cadastrar',
+        title: editingFamily ? 'Erro ao salvar alterações' : 'Erro ao cadastrar',
         description: err?.message || 'Ocorreu um erro ao salvar os dados.',
         variant: 'destructive',
       })
     } finally {
       setSaving(false)
     }
+  }
+
+  // Abre o wizard em MODO EDIÇÃO preenchido com os dados da ficha da família
+  const handleOpenEditWizard = (fam: Family) => {
+    setEditingFamily(fam)
+    setCurrentStep(1)
+    setWizardFamily({
+      reference_name: fam.reference_name || '',
+      primary_phone: fam.primary_phone || '',
+      email: fam.email || '',
+      address: fam.address || '',
+      notes: fam.notes || '',
+    })
+    setWizardGuardians(
+      (fam.guardians || []).length > 0
+        ? fam.guardians!.map((g) => ({
+            id: g.id,
+            name: g.name || '',
+            relationship: g.relationship || '',
+            phone: g.phone || '',
+            email: g.email || '',
+            is_emergency_contact: !!g.is_emergency_contact,
+            photo_url: g.photo_url || '',
+          }))
+        : [
+            {
+              id: undefined,
+              name: '',
+              relationship: 'Mãe',
+              phone: '',
+              email: '',
+              is_emergency_contact: true,
+              photo_url: '',
+            },
+          ],
+    )
+    setWizardChildren(
+      (fam.children || []).length > 0
+        ? fam.children!.map((c) => ({
+            id: c.id,
+            name: c.name || '',
+            birth_date: (c.birth_date || '').slice(0, 10),
+            classroom: (c.classroom || 'A') as ClassroomId,
+            allergies: c.allergies || '',
+            medical_notes: c.medical_notes || '',
+            image_authorized: c.image_authorized !== false,
+            photo_url: c.photo_url || '',
+          }))
+        : [
+            {
+              id: undefined,
+              name: '',
+              birth_date: '2020-05-15',
+              classroom: 'A',
+              allergies: '',
+              medical_notes: '',
+              image_authorized: true,
+              photo_url: '',
+            },
+          ],
+    )
+    setWizardOpen(true)
   }
 
   // Filtragem de famílias
@@ -584,6 +667,14 @@ export default function FamiliesPage() {
               </div>
 
               <DialogFooter>
+                <Button
+                  variant="outline"
+                  className="border-indigo-300 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40"
+                  onClick={() => handleOpenEditWizard(selectedFamily)}
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Editar Informações
+                </Button>
                 <Button variant="outline" onClick={() => setSelectedFamily(null)}>
                   Fechar Ficha
                 </Button>
@@ -598,7 +689,9 @@ export default function FamiliesPage() {
         <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
           <DialogHeader className="border-b pb-3">
             <div className="flex items-center justify-between">
-              <DialogTitle className="text-lg font-bold">Cadastro de Família</DialogTitle>
+              <DialogTitle className="text-lg font-bold">
+                {editingFamily ? 'Editar Ficha da Família' : 'Cadastro de Família'}
+              </DialogTitle>
               <Badge
                 variant="outline"
                 className="text-xs bg-indigo-50 text-indigo-700 border-indigo-200"
@@ -607,6 +700,7 @@ export default function FamiliesPage() {
               </Badge>
             </div>
             <DialogDescription className="text-xs">
+              {editingFamily && 'Editando ficha existente — altere os campos e salve.'}
               {currentStep === 1 && 'Etapa 1: Dados de referência e contato da família'}
               {currentStep === 2 && 'Etapa 2: Responsáveis legais e contatos de emergência'}
               {currentStep === 3 && 'Etapa 3: Crianças, data de nascimento e classificação de sala'}
@@ -784,6 +878,33 @@ export default function FamiliesPage() {
                           }}
                         />
                       </div>
+
+                      <div className="space-y-1 sm:col-span-2">
+                        <Label className="text-xs flex items-center gap-1.5">
+                          <Camera className="h-3.5 w-3.5 text-indigo-500" />
+                          Foto do Responsável (URL ou CDN)
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            placeholder="https://img.usecurling.com/ppl/medium?gender=female&seed=..."
+                            value={guardian.photo_url}
+                            onChange={(e) => {
+                              const updated = [...wizardGuardians]
+                              updated[index].photo_url = e.target.value
+                              setWizardGuardians(updated)
+                            }}
+                          />
+                          {guardian.photo_url && (
+                            <div className="h-9 w-9 rounded-full overflow-hidden bg-slate-200 shrink-0 border">
+                              <img
+                                src={guardian.photo_url}
+                                alt="Foto"
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
                     <div className="flex items-center space-x-2 pt-1">
@@ -907,6 +1028,33 @@ export default function FamiliesPage() {
                               setWizardChildren(updated)
                             }}
                           />
+                        </div>
+
+                        <div className="space-y-1 sm:col-span-2">
+                          <Label className="text-xs flex items-center gap-1.5">
+                            <Camera className="h-3.5 w-3.5 text-indigo-500" />
+                            Foto da Criança (URL ou CDN)
+                          </Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              placeholder="https://img.usecurling.com/ppl/medium?gender=male&seed=..."
+                              value={child.photo_url}
+                              onChange={(e) => {
+                                const updated = [...wizardChildren]
+                                updated[index].photo_url = e.target.value
+                                setWizardChildren(updated)
+                              }}
+                            />
+                            {child.photo_url && (
+                              <div className="h-9 w-9 rounded-full overflow-hidden bg-slate-200 shrink-0 border">
+                                <img
+                                  src={child.photo_url}
+                                  alt="Foto criança"
+                                  className="h-full w-full object-cover"
+                                />
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -1039,7 +1187,11 @@ export default function FamiliesPage() {
                   disabled={saving}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
-                  {saving ? 'Gravando...' : 'Confirmar e Salvar Cadastro'}
+                  {saving
+                    ? 'Gravando...'
+                    : editingFamily
+                      ? 'Salvar Alterações'
+                      : 'Confirmar e Salvar Cadastro'}
                 </Button>
               )}
             </div>

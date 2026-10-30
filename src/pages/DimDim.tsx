@@ -35,6 +35,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Gift,
+  Pencil,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -68,6 +69,12 @@ export default function DimDimPage() {
   const [quickClassroom, setQuickClassroom] = useState<string>('A')
   const [quickAmount, setQuickAmount] = useState<number>(10)
   const [quickReason, setQuickReason] = useState<string>('Presença no sábado letivo')
+
+  // Modal de Edição Direta de Saldo DimDim da Criança
+  const [balanceEditOpen, setBalanceEditOpen] = useState(false)
+  const [editingChild, setEditingChild] = useState<Child | null>(null)
+  const [customBalance, setCustomBalance] = useState<number>(0)
+  const [savingBalance, setSavingBalance] = useState(false)
 
   useEffect(() => {
     loadDimDimData()
@@ -147,6 +154,37 @@ export default function DimDimPage() {
       loadDimDimData()
     } catch (err: any) {
       toast({ title: 'Erro', description: err?.message, variant: 'destructive' })
+    }
+  }
+
+  const handleOpenEditBalance = (child: Child) => {
+    setEditingChild(child)
+    setCustomBalance(child.dimdim_balance || 0)
+    setBalanceEditOpen(true)
+  }
+
+  const handleSaveBalance = async () => {
+    if (!editingChild) return
+    try {
+      setSavingBalance(true)
+      await childService.update(editingChild.id, {
+        dimdim_balance: customBalance,
+      })
+      toast({
+        title: 'Saldo atualizado!',
+        description: `O saldo de DimDim de ${editingChild.name} foi ajustado para ${customBalance}.`,
+      })
+      setBalanceEditOpen(false)
+      setEditingChild(null)
+      loadDimDimData()
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao atualizar saldo',
+        description: err?.message,
+        variant: 'destructive',
+      })
+    } finally {
+      setSavingBalance(false)
     }
   }
 
@@ -335,42 +373,55 @@ export default function DimDimPage() {
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t flex items-center justify-end gap-1.5 text-xs">
+                  <div className="pt-2 border-t flex items-center justify-between gap-1 text-xs">
                     <Button
                       size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setTxForm({
-                          childId: child.id,
-                          type: 'credit',
-                          amount: 10,
-                          reason: 'Incentivo pedagógico',
-                          category: 'comportamento',
-                        })
-                        setTxOpen(true)
-                      }}
-                      className="h-7 text-[11px] px-2 text-emerald-600 border-emerald-200"
+                      variant="ghost"
+                      onClick={() => handleOpenEditBalance(child)}
+                      className="h-7 text-[11px] px-2 text-slate-500 hover:text-indigo-600"
+                      title="Ajustar saldo diretamente"
                     >
-                      + Creditar
+                      <Pencil className="h-3 w-3 mr-1" />
+                      Editar
                     </Button>
 
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setTxForm({
-                          childId: child.id,
-                          type: 'debit',
-                          amount: 10,
-                          reason: 'Troca na feirinha de prêmios',
-                          category: 'premiacao',
-                        })
-                        setTxOpen(true)
-                      }}
-                      className="h-7 text-[11px] px-2 text-rose-600 border-rose-200"
-                    >
-                      - Debitar
-                    </Button>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setTxForm({
+                            childId: child.id,
+                            type: 'credit',
+                            amount: 10,
+                            reason: 'Incentivo pedagógico',
+                            category: 'comportamento',
+                          })
+                          setTxOpen(true)
+                        }}
+                        className="h-7 text-[11px] px-2 text-emerald-600 border-emerald-200"
+                      >
+                        + Creditar
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setTxForm({
+                            childId: child.id,
+                            type: 'debit',
+                            amount: 10,
+                            reason: 'Troca na feirinha de prêmios',
+                            category: 'premiacao',
+                          })
+                          setTxOpen(true)
+                        }}
+                        className="h-7 text-[11px] px-2 text-rose-600 border-rose-200"
+                      >
+                        - Debitar
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               )
@@ -624,6 +675,52 @@ export default function DimDimPage() {
               className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold"
             >
               Executar Crédito Coletivo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Editar Saldo de DimDim da Criança */}
+      <Dialog open={balanceEditOpen} onOpenChange={setBalanceEditOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Saldo de DimDim</DialogTitle>
+            <DialogDescription className="text-xs">
+              Ajuste o saldo total acumulado de {editingChild?.name}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-2 space-y-3 text-xs">
+            <div className="space-y-1">
+              <Label>Saldo de DimDim</Label>
+              <Input
+                type="number"
+                min={0}
+                value={customBalance}
+                onChange={(e) => setCustomBalance(parseInt(e.target.value, 10) || 0)}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Informe o valor total corrigido para esta criança.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setBalanceEditOpen(false)}
+              disabled={savingBalance}
+            >
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSaveBalance}
+              disabled={savingBalance}
+              className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold"
+            >
+              {savingBalance ? 'Salvando...' : 'Salvar Saldo'}
             </Button>
           </DialogFooter>
         </DialogContent>

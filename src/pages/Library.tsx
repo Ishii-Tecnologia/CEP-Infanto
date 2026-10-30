@@ -35,6 +35,8 @@ import {
   ArrowRightLeft,
   Barcode,
   Library,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -46,8 +48,9 @@ export default function LibraryPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
-  // Modal de Novo Livro
+  // Modal de Novo Livro / Edição de Livro
   const [newBookOpen, setNewBookOpen] = useState(false)
+  const [editingBook, setEditingBook] = useState<Book | null>(null)
   const [bookForm, setBookForm] = useState({
     title: '',
     author: '',
@@ -57,6 +60,17 @@ export default function LibraryPage() {
     description: '',
     initialCopies: 1,
   })
+
+  // Modal de Edição de Exemplar (tombo, estado, status e notas)
+  const [copyEditOpen, setCopyEditOpen] = useState(false)
+  const [editingCopy, setEditingCopy] = useState<BookCopy | null>(null)
+  const [copyForm, setCopyForm] = useState({
+    copy_number: '',
+    condition: 'bom',
+    status: 'disponivel',
+    notes: '',
+  })
+  const [savingCopy, setSavingCopy] = useState(false)
 
   // Modal de Novo Empréstimo
   const [loanOpen, setLoanOpen] = useState(false)
@@ -83,6 +97,133 @@ export default function LibraryPage() {
       console.error('Erro ao carregar dados da biblioteca:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleOpenEditBook = (book: Book) => {
+    setEditingBook(book)
+    setBookForm({
+      title: book.title || '',
+      author: book.author || '',
+      publisher: book.publisher || '',
+      target_audience: book.target_audience || 'Sala A / B',
+      category: book.category || 'Evangelho',
+      description: book.description || '',
+      initialCopies: 1,
+    })
+    setNewBookOpen(true)
+  }
+
+  const handleSaveBookEdit = async () => {
+    if (!editingBook || !bookForm.title.trim()) {
+      toast({
+        title: 'Atenção',
+        description: 'O título do livro é obrigatório.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      await libraryService.updateBook(editingBook.id, {
+        title: bookForm.title,
+        author: bookForm.author,
+        publisher: bookForm.publisher,
+        target_audience: bookForm.target_audience,
+        category: bookForm.category,
+        description: bookForm.description,
+      })
+      toast({
+        title: 'Ficha do livro atualizada!',
+        description: 'As informações da obra foram salvas com sucesso.',
+      })
+      setNewBookOpen(false)
+      setEditingBook(null)
+      loadLibraryData()
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao salvar alterações',
+        description: err?.message,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleOpenEditCopy = (copy: BookCopy, book: Book) => {
+    setEditingCopy({ ...copy, expand: { book_id: book } as any })
+    setCopyForm({
+      copy_number: copy.copy_number || '',
+      condition: copy.condition || 'bom',
+      status: copy.status || 'disponivel',
+      notes: copy.notes || '',
+    })
+    setCopyEditOpen(true)
+  }
+
+  const handleSaveCopyEdit = async () => {
+    if (!editingCopy || !copyForm.copy_number.trim()) {
+      toast({
+        title: 'Atenção',
+        description: 'O número de tombo é obrigatório.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      setSavingCopy(true)
+      await libraryService.updateCopy(editingCopy.id, {
+        copy_number: copyForm.copy_number,
+        condition: copyForm.condition as any,
+        status: copyForm.status as any,
+        notes: copyForm.notes,
+      })
+      toast({
+        title: 'Exemplar atualizado!',
+        description: 'Tombo, estado de conservação e disponibilidade foram salvos.',
+      })
+      setCopyEditOpen(false)
+      setEditingCopy(null)
+      loadLibraryData()
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao salvar exemplar',
+        description: err?.message,
+        variant: 'destructive',
+      })
+    } finally {
+      setSavingCopy(false)
+    }
+  }
+
+  const handleDeleteCopy = async (copy: BookCopy) => {
+    if (copy.status !== 'disponivel') {
+      toast({
+        title: 'Atenção',
+        description:
+          'Só é possível excluir exemplares que estejam disponíveis (sem empréstimo ativo).',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (
+      !window.confirm(
+        `Excluir o exemplar de tombo ${copy.copy_number}? Esta ação não pode ser desfeita.`,
+      )
+    ) {
+      return
+    }
+
+    try {
+      await libraryService.deleteCopy(copy.id)
+      toast({
+        title: 'Exemplar excluído',
+        description: `O tombo ${copy.copy_number} foi removido do acervo.`,
+      })
+      loadLibraryData()
+    } catch (err: any) {
+      toast({ title: 'Erro ao excluir', description: err?.message, variant: 'destructive' })
     }
   }
 
@@ -281,16 +422,19 @@ export default function LibraryPage() {
                           <Badge
                             key={cp.id}
                             variant="outline"
-                            className={`text-[10px] ${
+                            className={`text-[10px] cursor-pointer hover:opacity-80 ${
                               cp.status === 'disponivel'
                                 ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                                 : cp.status === 'emprestado'
                                   ? 'bg-amber-50 text-amber-800 border-amber-300'
                                   : 'bg-slate-100 text-slate-800'
                             }`}
+                            onClick={() => handleOpenEditCopy(cp, book)}
+                            title="Clique para editar o exemplar"
                           >
                             <Barcode className="h-3 w-3 mr-1" />
                             {cp.copy_number} ({cp.status})
+                            <Pencil className="h-2.5 w-2.5 ml-1 opacity-60" />
                           </Badge>
                         ))}
                       </div>
@@ -304,6 +448,16 @@ export default function LibraryPage() {
                         {available} de {totalCopies}
                       </strong>
                     </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleOpenEditBook(book)}
+                      className="text-xs text-indigo-600 hover:text-indigo-800 h-7 px-2"
+                    >
+                      <Pencil className="h-3.5 w-3.5 mr-1" />
+                      Editar Ficha
+                    </Button>
+
                     <Button
                       size="sm"
                       variant="ghost"
@@ -443,13 +597,23 @@ export default function LibraryPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Modal: Novo Livro */}
-      <Dialog open={newBookOpen} onOpenChange={setNewBookOpen}>
+      {/* Modal: Novo Livro / Editar Livro */}
+      <Dialog
+        open={newBookOpen}
+        onOpenChange={(open) => {
+          setNewBookOpen(open)
+          if (!open) setEditingBook(null)
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cadastrar Livro no Acervo</DialogTitle>
+            <DialogTitle>
+              {editingBook ? 'Editar Ficha do Livro' : 'Cadastrar Livro no Acervo'}
+            </DialogTitle>
             <DialogDescription className="text-xs">
-              Informe os dados da obra e a quantidade de exemplares físicos para gerar os tombos.
+              {editingBook
+                ? 'Altere os dados da obra. Os exemplares físicos (tombos) continuam vinculados.'
+                : 'Informe os dados da obra e a quantidade de exemplares físicos para gerar os tombos.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -493,18 +657,20 @@ export default function LibraryPage() {
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label>Exemplares Iniciais</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={bookForm.initialCopies}
-                  onChange={(e) =>
-                    setBookForm({ ...bookForm, initialCopies: parseInt(e.target.value) || 1 })
-                  }
-                />
-              </div>
+              {!editingBook && (
+                <div className="space-y-1">
+                  <Label>Exemplares Iniciais</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={bookForm.initialCopies}
+                    onChange={(e) =>
+                      setBookForm({ ...bookForm, initialCopies: parseInt(e.target.value) || 1 })
+                    }
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-1">
@@ -523,11 +689,106 @@ export default function LibraryPage() {
             </Button>
             <Button
               size="sm"
-              onClick={handleCreateBook}
+              onClick={editingBook ? handleSaveBookEdit : handleCreateBook}
               className="bg-indigo-600 hover:bg-indigo-700 text-white"
             >
-              Salvar Obra
+              {editingBook ? 'Salvar Alterações' : 'Salvar Obra'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Editar Exemplar (Tombo, Estado, Status, Notas) */}
+      <Dialog open={copyEditOpen} onOpenChange={setCopyEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Exemplar</DialogTitle>
+            <DialogDescription className="text-xs">
+              Ajuste o tombo, o estado de conservação e a disponibilidade do exemplar físico.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-2 space-y-3 text-xs">
+            <div className="space-y-1">
+              <Label>Número de Tombo *</Label>
+              <Input
+                placeholder="Ex: T-001"
+                value={copyForm.copy_number}
+                onChange={(e) => setCopyForm({ ...copyForm, copy_number: e.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Estado de Conservação</Label>
+                <Select
+                  value={copyForm.condition}
+                  onValueChange={(v) => setCopyForm({ ...copyForm, condition: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Estado..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="novo">Novo</SelectItem>
+                    <SelectItem value="bom">Bom</SelectItem>
+                    <SelectItem value="gasto">Gasto</SelectItem>
+                    <SelectItem value="danificado">Danificado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label>Disponibilidade</Label>
+                <Select
+                  value={copyForm.status}
+                  onValueChange={(v) => setCopyForm({ ...copyForm, status: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Status..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="disponivel">Disponível</SelectItem>
+                    <SelectItem value="emprestado">Emprestado</SelectItem>
+                    <SelectItem value="extraviado">Extraviado</SelectItem>
+                    <SelectItem value="descartado">Descartado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label>Observações do Exemplar</Label>
+              <Input
+                placeholder="Ex: capa amassada, página 12 rasgada..."
+                value={copyForm.notes}
+                onChange={(e) => setCopyForm({ ...copyForm, notes: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="flex items-center justify-between gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => editingCopy && handleDeleteCopy(editingCopy)}
+              className="text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1" />
+              Excluir
+            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setCopyEditOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSaveCopyEdit}
+                disabled={savingCopy}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              >
+                {savingCopy ? 'Salvando...' : 'Salvar Exemplar'}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

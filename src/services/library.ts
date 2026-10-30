@@ -63,6 +63,15 @@ export const libraryService = {
     return pb.collection('books').update<Book>(id, data)
   },
 
+  async updateCopy(id: string, data: Partial<BookCopy>): Promise<BookCopy> {
+    return pb.collection('book_copies').update<BookCopy>(id, data)
+  },
+
+  async deleteCopy(id: string): Promise<boolean> {
+    await pb.collection('book_copies').delete(id)
+    return true
+  },
+
   async deleteBook(id: string): Promise<boolean> {
     await pb.collection('books').delete(id)
     return true

@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { ChangePasswordDialog } from '@/components/ChangePasswordDialog'
 import {
   LayoutDashboard,
   Users,
@@ -25,6 +26,7 @@ import {
   ChevronDown,
   ShieldCheck,
   UserCheck,
+  KeyRound,
 } from 'lucide-react'
 import { UserRole } from '@/types'
 
@@ -33,6 +35,7 @@ export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [ownPasswordModalOpen, setOwnPasswordModalOpen] = useState(false)
 
   // Se não estiver logado e não estiver no login, redireciona
   React.useEffect(() => {
@@ -316,6 +319,16 @@ export default function Layout() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuLabel className="text-xs">Minha Conta</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => setOwnPasswordModalOpen(true)}
+                      className="text-xs"
+                    >
+                      <KeyRound className="h-3.5 w-3.5 mr-2" />
+                      Alterar minha senha
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuLabel className="text-xs">
                       Alternar Perfil (Demo)
                     </DropdownMenuLabel>
@@ -402,6 +415,9 @@ export default function Layout() {
       <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         <Outlet />
       </main>
+
+      {/* Modal global: alterar a própria senha (disponível em qualquer tela pelo menu superior) */}
+      <ChangePasswordDialog open={ownPasswordModalOpen} onOpenChange={setOwnPasswordModalOpen} />
     </div>
   )
 }

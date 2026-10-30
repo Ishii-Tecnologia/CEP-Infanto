@@ -23,8 +23,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { KeyRound, UserPlus, Calendar, BookOpen, Coins, Trash2, AlertTriangle } from 'lucide-react'
+import {
+  KeyRound,
+  UserPlus,
+  Calendar,
+  BookOpen,
+  Coins,
+  Trash2,
+  AlertTriangle,
+  ShieldCheck,
+} from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { ChangePasswordDialog } from '@/components/ChangePasswordDialog'
 
 import { useAcademic, SchoolYearConfig, RecessSaturday } from '@/contexts/AcademicContext'
 import { syncOrRegenerateCalendar } from '@/services/calendarGenerator'
@@ -63,6 +73,9 @@ export default function SettingsPage() {
   const [resetModalOpen, setResetModalOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [newPassword, setNewPassword] = useState('Skip@Pass')
+
+  // Modal de Alteração da Própria Senha
+  const [ownPasswordModalOpen, setOwnPasswordModalOpen] = useState(false)
 
   // Modal de Exclusão de Operador
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
@@ -191,7 +204,7 @@ export default function SettingsPage() {
       await settingsService.resetUserPassword(selectedUser.id, newPassword)
       toast({
         title: 'Senha redefinida com sucesso!',
-        description: `Nova senha definida para ${selectedUser.name}: ${newPassword}`,
+        description: `A senha do operador ${selectedUser.name} foi redefinida.`,
       })
       setResetModalOpen(false)
     } catch (err: any) {
@@ -392,13 +405,24 @@ export default function SettingsPage() {
           </p>
         </div>
 
-        <Button
-          onClick={() => setUserModalOpen(true)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white"
-        >
-          <UserPlus className="h-4 w-4 mr-2" />
-          Novo Operador
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            onClick={() => setOwnPasswordModalOpen(true)}
+            variant="outline"
+            className="border-indigo-300 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40"
+          >
+            <KeyRound className="h-4 w-4 mr-2 text-indigo-600" />
+            Alterar Minha Senha
+          </Button>
+
+          <Button
+            onClick={() => setUserModalOpen(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Novo Operador
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="operadores" className="space-y-4">
@@ -1041,10 +1065,14 @@ export default function SettingsPage() {
           <div className="py-2 space-y-2 text-xs">
             <Label>Nova Senha</Label>
             <Input
-              type="text"
+              type="password"
+              placeholder="Digite a nova senha (mínimo 8 caracteres)"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
             />
+            <p className="text-[11px] text-muted-foreground">
+              Por privacidade e segurança, a senha informada não será exibida na confirmação.
+            </p>
           </div>
 
           <DialogFooter>
@@ -1128,6 +1156,9 @@ export default function SettingsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal: Alterar Minha Própria Senha */}
+      <ChangePasswordDialog open={ownPasswordModalOpen} onOpenChange={setOwnPasswordModalOpen} />
     </div>
   )
 }
