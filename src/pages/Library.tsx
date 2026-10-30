@@ -39,6 +39,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { ImageCaptureInput } from '@/components/ImageCaptureInput'
 
 export default function LibraryPage() {
   const { toast } = useToast()
@@ -58,6 +59,7 @@ export default function LibraryPage() {
     target_audience: 'Sala A / B',
     category: 'Evangelho',
     description: '',
+    cover_url: '',
     initialCopies: 1,
   })
 
@@ -109,6 +111,7 @@ export default function LibraryPage() {
       target_audience: book.target_audience || 'Sala A / B',
       category: book.category || 'Evangelho',
       description: book.description || '',
+      cover_url: book.cover_url || '',
       initialCopies: 1,
     })
     setNewBookOpen(true)
@@ -132,6 +135,7 @@ export default function LibraryPage() {
         target_audience: bookForm.target_audience,
         category: bookForm.category,
         description: bookForm.description,
+        cover_url: bookForm.cover_url,
       })
       toast({
         title: 'Ficha do livro atualizada!',
@@ -251,6 +255,7 @@ export default function LibraryPage() {
         target_audience: 'Sala A / B',
         category: 'Evangelho',
         description: '',
+        cover_url: '',
         initialCopies: 1,
       })
       loadLibraryData()
@@ -388,18 +393,36 @@ export default function LibraryPage() {
                   className="hover:border-indigo-200 transition-all flex flex-col justify-between"
                 >
                   <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
+                    <div className="flex items-start gap-3">
+                      {/* Capa do Livro (se houver, com visual de lombada) */}
+                      <div className="w-14 h-20 rounded-md overflow-hidden bg-slate-100 dark:bg-slate-800 border shrink-0 flex items-center justify-center shadow-xs">
+                        {book.cover_url ? (
+                          <img
+                            src={book.cover_url}
+                            alt={`Capa de ${book.title}`}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center p-1 text-slate-400 text-center">
+                            <BookOpen className="h-5 w-5 mb-0.5 opacity-40 text-indigo-500" />
+                            <span className="text-[8px] font-semibold uppercase tracking-wider opacity-60">
+                              Sem capa
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-1 flex-1 min-w-0">
                         <Badge
                           variant="outline"
                           className="text-[10px] bg-slate-100 dark:bg-slate-800"
                         >
                           {book.category || 'Geral'}
                         </Badge>
-                        <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 leading-snug">
+                        <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 leading-snug line-clamp-2">
                           {book.title}
                         </CardTitle>
-                        <CardDescription className="text-xs">
+                        <CardDescription className="text-xs truncate">
                           {book.author ? `Por ${book.author}` : 'Autor não informado'} •{' '}
                           {book.publisher}
                         </CardDescription>
@@ -448,37 +471,40 @@ export default function LibraryPage() {
                         {available} de {totalCopies}
                       </strong>
                     </span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleOpenEditBook(book)}
-                      className="text-xs text-indigo-600 hover:text-indigo-800 h-7 px-2"
-                    >
-                      <Pencil className="h-3.5 w-3.5 mr-1" />
-                      Editar Ficha
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleOpenEditBook(book)}
+                        className="text-xs text-indigo-600 hover:text-indigo-800 h-7 px-2"
+                        title="Editar dados e capa da obra"
+                      >
+                        <Pencil className="h-3.5 w-3.5 mr-1" />
+                        Editar Ficha
+                      </Button>
 
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        const firstAvail = (book.copies || []).find(
-                          (c) => c.status === 'disponivel',
-                        )
-                        if (firstAvail) {
-                          setSelectedCopyId(firstAvail.id)
-                          setLoanOpen(true)
-                        } else {
-                          toast({
-                            title: 'Atenção',
-                            description: 'Nenhum exemplar disponível deste livro no momento.',
-                          })
-                        }
-                      }}
-                      className="text-xs text-indigo-600 hover:text-indigo-800 h-7 px-2"
-                    >
-                      Emprestar
-                    </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          const firstAvail = (book.copies || []).find(
+                            (c) => c.status === 'disponivel',
+                          )
+                          if (firstAvail) {
+                            setSelectedCopyId(firstAvail.id)
+                            setLoanOpen(true)
+                          } else {
+                            toast({
+                              title: 'Atenção',
+                              description: 'Nenhum exemplar disponível deste livro no momento.',
+                            })
+                          }
+                        }}
+                        className="text-xs text-indigo-600 hover:text-indigo-800 h-7 px-2"
+                      >
+                        Emprestar
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               )
@@ -679,6 +705,19 @@ export default function LibraryPage() {
                 placeholder="Descrição dos temas abordados..."
                 value={bookForm.description}
                 onChange={(e) => setBookForm({ ...bookForm, description: e.target.value })}
+              />
+            </div>
+
+            {/* Captura da Capa do Livro (Câmera, Colar ou Enviar Arquivo) */}
+            <div className="pt-1 border-t">
+              <ImageCaptureInput
+                label="Capa do Livro"
+                description="Tirar foto da capa, colar imagem ou enviar arquivo"
+                placeholder="Cole a imagem da capa, envie arquivo ou tire uma foto com a câmera..."
+                value={bookForm.cover_url}
+                aspectRatio="portrait"
+                previewShape="rounded"
+                onChange={(cover) => setBookForm({ ...bookForm, cover_url: cover })}
               />
             </div>
           </div>

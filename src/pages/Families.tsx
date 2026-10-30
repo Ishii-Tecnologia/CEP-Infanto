@@ -47,6 +47,7 @@ import {
   Plus,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { ImageCaptureInput } from '@/components/ImageCaptureInput'
 
 export default function FamiliesPage() {
   const { toast } = useToast()
@@ -880,30 +881,19 @@ export default function FamiliesPage() {
                       </div>
 
                       <div className="space-y-1 sm:col-span-2">
-                        <Label className="text-xs flex items-center gap-1.5">
-                          <Camera className="h-3.5 w-3.5 text-indigo-500" />
-                          Foto do Responsável (URL ou CDN)
-                        </Label>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            placeholder="https://img.usecurling.com/ppl/medium?gender=female&seed=..."
-                            value={guardian.photo_url}
-                            onChange={(e) => {
-                              const updated = [...wizardGuardians]
-                              updated[index].photo_url = e.target.value
-                              setWizardGuardians(updated)
-                            }}
-                          />
-                          {guardian.photo_url && (
-                            <div className="h-9 w-9 rounded-full overflow-hidden bg-slate-200 shrink-0 border">
-                              <img
-                                src={guardian.photo_url}
-                                alt="Foto"
-                                className="h-full w-full object-cover"
-                              />
-                            </div>
-                          )}
-                        </div>
+                        <ImageCaptureInput
+                          label="Foto do Responsável"
+                          description="Câmera do celular, colar ou upload"
+                          placeholder="Cole uma imagem, envie arquivo ou tire uma foto..."
+                          value={guardian.photo_url}
+                          previewShape="circle"
+                          aspectRatio="square"
+                          onChange={(newPhoto) => {
+                            const updated = [...wizardGuardians]
+                            updated[index].photo_url = newPhoto
+                            setWizardGuardians(updated)
+                          }}
+                        />
                       </div>
                     </div>
 
@@ -1031,30 +1021,19 @@ export default function FamiliesPage() {
                         </div>
 
                         <div className="space-y-1 sm:col-span-2">
-                          <Label className="text-xs flex items-center gap-1.5">
-                            <Camera className="h-3.5 w-3.5 text-indigo-500" />
-                            Foto da Criança (URL ou CDN)
-                          </Label>
-                          <div className="flex items-center gap-2">
-                            <Input
-                              placeholder="https://img.usecurling.com/ppl/medium?gender=male&seed=..."
-                              value={child.photo_url}
-                              onChange={(e) => {
-                                const updated = [...wizardChildren]
-                                updated[index].photo_url = e.target.value
-                                setWizardChildren(updated)
-                              }}
-                            />
-                            {child.photo_url && (
-                              <div className="h-9 w-9 rounded-full overflow-hidden bg-slate-200 shrink-0 border">
-                                <img
-                                  src={child.photo_url}
-                                  alt="Foto criança"
-                                  className="h-full w-full object-cover"
-                                />
-                              </div>
-                            )}
-                          </div>
+                          <ImageCaptureInput
+                            label="Foto da Criança"
+                            description="Câmera do celular, colar ou upload"
+                            placeholder="Cole uma imagem, envie arquivo ou tire uma foto..."
+                            value={child.photo_url}
+                            previewShape="circle"
+                            aspectRatio="square"
+                            onChange={(newPhoto) => {
+                              const updated = [...wizardChildren]
+                              updated[index].photo_url = newPhoto
+                              setWizardChildren(updated)
+                            }}
+                          />
                         </div>
                       </div>
 
