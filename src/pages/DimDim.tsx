@@ -3,6 +3,7 @@ import { dimdimService } from '@/services/dimdim'
 import { childService } from '@/services/families'
 import { Child, DimDimTransaction, DimDimTransactionType, DimDimCategory } from '@/types'
 import { formatDateTime, getClassroomBadge } from '@/lib/academic'
+import { useAcademic } from '@/contexts/AcademicContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -39,6 +40,7 @@ import { useToast } from '@/hooks/use-toast'
 
 export default function DimDimPage() {
   const { toast } = useToast()
+  const { classrooms } = useAcademic()
   const [children, setChildren] = useState<Child[]>([])
   const [transactions, setTransactions] = useState<DimDimTransaction[]>([])
   const [loading, setLoading] = useState(true)
@@ -294,7 +296,7 @@ export default function DimDimPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {filteredChildren.map((child) => {
-              const badge = getClassroomBadge(child.classroom)
+              const badge = getClassroomBadge(child.classroom, classrooms)
               return (
                 <Card
                   key={child.id}
@@ -586,10 +588,11 @@ export default function DimDimPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="A">Sala A (3 a 5 anos)</SelectItem>
-                    <SelectItem value="B">Sala B (6 a 8 anos)</SelectItem>
-                    <SelectItem value="C">Sala C (9 a 11 anos)</SelectItem>
-                    <SelectItem value="D">Sala D (12 a 14 anos)</SelectItem>
+                    {classrooms.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name} ({c.minAge} a {c.maxAge} anos)
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

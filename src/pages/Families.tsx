@@ -7,6 +7,7 @@ import {
   formatDate,
   getClassroomBadge,
 } from '@/lib/academic'
+import { useAcademic } from '@/contexts/AcademicContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -48,6 +49,7 @@ import { useToast } from '@/hooks/use-toast'
 
 export default function FamiliesPage() {
   const { toast } = useToast()
+  const { classrooms, schoolYear, classifyChild, calculateAge } = useAcademic()
   const [families, setFamilies] = useState<Family[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -172,11 +174,11 @@ export default function FamiliesPage() {
 
   const handleBirthDateChange = (index: number, dateStr: string) => {
     const updated = [...wizardChildren]
-    const autoClass = classifyClassroomByBirthDate(dateStr, 2027)
+    const autoClass = classifyChild(dateStr)
     updated[index] = {
       ...updated[index],
       birth_date: dateStr,
-      classroom: autoClass,
+      classroom: autoClass || 'A',
     }
     setWizardChildren(updated)
   }
@@ -305,10 +307,11 @@ export default function FamiliesPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as Salas</SelectItem>
-                <SelectItem value="A">Sala A (3 a 5 anos)</SelectItem>
-                <SelectItem value="B">Sala B (6 a 8 anos)</SelectItem>
-                <SelectItem value="C">Sala C (9 a 11 anos)</SelectItem>
-                <SelectItem value="D">Sala D (12 a 14 anos)</SelectItem>
+                {classrooms.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name} ({c.minAge} a {c.maxAge} anos)
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -372,8 +375,8 @@ export default function FamiliesPage() {
                 </p>
                 <div className="space-y-1.5">
                   {(fam.children || []).map((c) => {
-                    const badge = getClassroomBadge(c.classroom)
-                    const age = calculateAgeOnCutoffDate(c.birth_date, 2027)
+                    const badge = getClassroomBadge(c.classroom, classrooms)
+                    const age = calculateAge(c.birth_date)
                     return (
                       <div
                         key={c.id}
@@ -513,8 +516,8 @@ export default function FamiliesPage() {
                   </h4>
                   <div className="space-y-3">
                     {(selectedFamily.children || []).map((c) => {
-                      const badge = getClassroomBadge(c.classroom)
-                      const age = calculateAgeOnCutoffDate(c.birth_date, 2027)
+                      const badge = getClassroomBadge(c.classroom, classrooms)
+                      const age = calculateAge(c.birth_date)
                       return (
                         <div
                           key={c.id}
@@ -540,7 +543,8 @@ export default function FamiliesPage() {
                                   {c.name}
                                 </p>
                                 <p className="text-muted-foreground text-[11px]">
-                                  Nasc: {formatDate(c.birth_date)} ({age} anos em 01/03/2027)
+                                  Nasc: {formatDate(c.birth_date)} ({age} anos em 01/03/
+                                  {schoolYear.year || 2027})
                                 </p>
                               </div>
                             </div>
@@ -820,13 +824,14 @@ export default function FamiliesPage() {
             {currentStep === 3 && (
               <div className="space-y-4">
                 <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 p-2.5 rounded-lg text-xs text-amber-900 dark:text-amber-200">
-                  <strong>Classificação Automática:</strong> A sala (A, B, C ou D) é calculada
-                  imediatamente a partir da idade completa em 1º de março de 2027.
+                  <strong>Classificação Automática:</strong> A sala é calculada imediatamente a
+                  partir da idade completa em 1º de março do ano letivo ({schoolYear.year || 2027})
+                  e das faixas configuradas.
                 </div>
 
                 {wizardChildren.map((child, index) => {
-                  const calculatedAge = calculateAgeOnCutoffDate(child.birth_date, 2027)
-                  const badge = getClassroomBadge(child.classroom)
+                  const calculatedAge = calculateAge(child.birth_date)
+                  const badge = getClassroomBadge(child.classroom, classrooms)
 
                   return (
                     <div
@@ -977,8 +982,8 @@ export default function FamiliesPage() {
                   </p>
                   <div className="space-y-1.5">
                     {wizardChildren.map((c, i) => {
-                      const badge = getClassroomBadge(c.classroom)
-                      const age = calculateAgeOnCutoffDate(c.birth_date, 2027)
+                      const badge = getClassroomBadge(c.classroom, classrooms)
+                      const age = calculateAge(c.birth_date)
                       return (
                         <div
                           key={i}

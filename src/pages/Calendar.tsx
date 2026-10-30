@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { lessonService } from '@/services/lessons'
 import { Lesson, LessonPlan, ClassroomId } from '@/types'
 import { formatDate, getClassroomBadge } from '@/lib/academic'
+import { useAcademic } from '@/contexts/AcademicContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -27,11 +28,14 @@ import {
   Plus,
   Edit3,
   CalendarCheck,
+  Sliders,
+  Settings2,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 export default function CalendarPage() {
   const { toast } = useToast()
+  const { classrooms, saveClassrooms, schoolYear } = useAcademic()
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null)
@@ -49,17 +53,30 @@ export default function CalendarPage() {
     materials: '',
   })
 
+  // Modal de Configuração das Salas (Nome e Faixa Etária)
+  const [classroomsModalOpen, setClassroomsModalOpen] = useState(false)
+  const [editingClassrooms, setEditingClassrooms] = useState(classrooms)
+  const [savingClassrooms, setSavingClassrooms] = useState(false)
+
+  useEffect(() => {
+    setEditingClassrooms(classrooms)
+  }, [classrooms])
+
   useEffect(() => {
     loadLessons()
-  }, [])
+  }, [schoolYear.year])
 
   const loadLessons = async () => {
     try {
       setLoading(true)
-      const data = await lessonService.getAll(2027)
+      const data = await lessonService.getAll(schoolYear.year || 2027)
       setLessons(data)
-      if (data.length > 0 && !selectedLesson) {
-        setSelectedLesson(data[0])
+      if (data.length > 0) {
+        setSelectedLesson((prev) => {
+          if (!prev) return data[0]
+          const found = data.find((l) => l.id === prev.id)
+          return found || data[0]
+        })
       }
     } catch (err) {
       console.error('Erro ao carregar aulas:', err)
@@ -70,6 +87,32 @@ export default function CalendarPage() {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleOpenClassroomsModal = () => {
+    setEditingClassrooms(JSON.parse(JSON.stringify(classrooms)))
+    setClassroomsModalOpen(true)
+  }
+
+  const handleSaveClassrooms = async () => {
+    try {
+      setSavingClassrooms(true)
+      await saveClassrooms(editingClassrooms)
+      toast({
+        title: 'Configurações de salas salvas!',
+        description:
+          'Os novos nomes/rótulos e faixas etárias foram atualizados no sistema CEP-Coligação Espírita Progressista.',
+      })
+      setClassroomsModalOpen(false)
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao salvar salas',
+        description: err?.message || 'Falha ao salvar novas configurações.',
+        variant: 'destructive',
+      })
+    } finally {
+      setSavingClassrooms(false)
     }
   }
 
@@ -164,12 +207,22 @@ export default function CalendarPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleOpenClassroomsModal}
+            className="h-9 text-xs border-indigo-200 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40"
+          >
+            <Sliders className="h-3.5 w-3.5 mr-1.5 text-indigo-600" />
+            Configurar Salas (Nomes e Idades)
+          </Button>
+
           <Badge
             variant="outline"
-            className="bg-indigo-50 text-indigo-700 border-indigo-200 text-xs py-1 px-3"
+            className="bg-indigo-50 text-indigo-700 border-indigo-200 text-xs py-1.5 px-3"
           >
-            Ano Letivo 2027 • 30 Sábados
+            Ano Letivo {schoolYear.year || 2027} • {lessons.length} Sábados
           </Badge>
         </div>
       </div>
@@ -310,15 +363,19 @@ export default function CalendarPage() {
                   {/* Abas com planos pedagógicos de cada sala */}
                   <Tabs defaultValue="A" className="w-full">
                     <TabsList className="grid grid-cols-4 w-full">
-                      <TabsTrigger value="A">Sala A</TabsTrigger>
-                      <TabsTrigger value="B">Sala B</TabsTrigger>
-                      <TabsTrigger value="C">Sala C</TabsTrigger>
-                      <TabsTrigger value="D">Sala D</TabsTrigger>
+                      {(['A', 'B', 'C', 'D'] as ClassroomId[]).map((cId) => {
+                        const room = classrooms.find((c) => c.id === cId)
+                        return (
+                          <TabsTrigger key={cId} value={cId} className="truncate text-xs px-1">
+                            {room?.name || `Sala ${cId}`}
+                          </TabsTrigger>
+                        )
+                      })}
                     </TabsList>
 
                     {(['A', 'B', 'C', 'D'] as ClassroomId[]).map((cId) => {
                       const plan = (selectedLesson.plans || []).find((p) => p.classroom === cId)
-                      const badge = getClassroomBadge(cId)
+                      const badge = getClassroomBadge(cId, classrooms)
 
                       return (
                         <TabsContent key={cId} value={cId} className="pt-3 space-y-3">
@@ -434,7 +491,11 @@ export default function CalendarPage() {
       <Dialog open={!!editingPlan} onOpenChange={(open) => !open && setEditingPlan(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Editar Plano de Aula — Sala {editingPlan?.classroom}</DialogTitle>
+            <DialogTitle>
+              Editar Plano de Aula —{' '}
+              {classrooms.find((c) => c.id === editingPlan?.classroom)?.name ||
+                `Sala ${editingPlan?.classroom}`}
+            </DialogTitle>
             <DialogDescription className="text-xs">
               Ajuste o objetivo, a dinâmica e os materiais necessários para a turma.
             </DialogDescription>
@@ -486,6 +547,138 @@ export default function CalendarPage() {
               className="bg-indigo-600 hover:bg-indigo-700 text-white"
             >
               Salvar Plano
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Configurações de Salas (Nomes e Faixas Etárias Editáveis) */}
+      <Dialog open={classroomsModalOpen} onOpenChange={setClassroomsModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+              <Sliders className="h-5 w-5" />
+              Configuração das Salas e Faixas Etárias
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Ajuste os nomes/rótulos das salas (ex: <em>Sala D (Responsáveis)</em>) e as idades
+              mínima e máxima de cada turma. A classificação automática das crianças em 1º de março
+              passará a seguir essas novas faixas configuradas.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-3 space-y-4 text-xs">
+            <div className="p-3 bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900 rounded-lg text-indigo-900 dark:text-indigo-200">
+              <p className="font-semibold text-xs mb-1">Regra Institucional:</p>
+              <p className="text-[11px] leading-relaxed">
+                As crianças continuam sendo classificadas com base na idade completa até a data de
+                corte (1º de março). Ao alterar as idades de cada sala, novos cadastros e a
+                visualização dos crachás adotarão imediatamente os rótulos configurados.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {editingClassrooms.map((room, idx) => (
+                <Card key={room.id} className="p-3.5 border border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-indigo-600 text-white font-bold text-xs">
+                        ID: {room.id}
+                      </Badge>
+                      <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                        {room.name}
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground">
+                      Faixa atual: {room.minAge} a {room.maxAge} anos
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-2 space-y-1">
+                      <Label className="text-xs">
+                        Nome / Rótulo da Sala (ex: Sala D (Responsáveis))
+                      </Label>
+                      <Input
+                        value={room.name}
+                        onChange={(e) => {
+                          const updated = [...editingClassrooms]
+                          updated[idx] = { ...updated[idx], name: e.target.value }
+                          setEditingClassrooms(updated)
+                        }}
+                        placeholder={`Nome da Sala ${room.id}`}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Idade Mín.</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={99}
+                          value={room.minAge}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value, 10) || 0
+                            const updated = [...editingClassrooms]
+                            updated[idx] = { ...updated[idx], minAge: val }
+                            setEditingClassrooms(updated)
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Idade Máx.</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={99}
+                          value={room.maxAge}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value, 10) || 0
+                            const updated = [...editingClassrooms]
+                            updated[idx] = { ...updated[idx], maxAge: val }
+                            setEditingClassrooms(updated)
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="sm:col-span-3 space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">
+                        Descrição pedagógica da turma
+                      </Label>
+                      <Input
+                        value={room.description || ''}
+                        onChange={(e) => {
+                          const updated = [...editingClassrooms]
+                          updated[idx] = { ...updated[idx], description: e.target.value }
+                          setEditingClassrooms(updated)
+                        }}
+                        placeholder="Ex: Maternal e Jardim (3 a 5 anos completos até 01/03)"
+                      />
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setClassroomsModalOpen(false)}
+              disabled={savingClassrooms}
+            >
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSaveClassrooms}
+              disabled={savingClassrooms}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              {savingClassrooms ? 'Salvando...' : 'Salvar Configurações de Salas'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -3,6 +3,7 @@ import { lessonService, attendanceService } from '@/services/lessons'
 import { childService } from '@/services/families'
 import { Lesson, Child, ClassroomId, AttendanceStatus, Attendance } from '@/types'
 import { formatDate, getClassroomBadge } from '@/lib/academic'
+import { useAcademic } from '@/contexts/AcademicContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -31,6 +32,7 @@ import { useToast } from '@/hooks/use-toast'
 
 export default function AttendancePage() {
   const { toast } = useToast()
+  const { classrooms, schoolYear } = useAcademic()
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [selectedLessonId, setSelectedLessonId] = useState<string>('')
   const [selectedClassroom, setSelectedClassroom] = useState<ClassroomId>('A')
@@ -48,7 +50,7 @@ export default function AttendancePage() {
   const loadLessons = async () => {
     try {
       setLoading(true)
-      const data = await lessonService.getAll(2027)
+      const data = await lessonService.getAll(schoolYear.year || 2027)
       setLessons(data)
 
       const active = data.find((l) => l.status === 'scheduled')
@@ -178,7 +180,7 @@ export default function AttendancePage() {
 
   const currentLesson = lessons.find((l) => l.id === selectedLessonId)
   const currentPlan = currentLesson?.plans?.find((p) => p.classroom === selectedClassroom)
-  const classroomBadge = getClassroomBadge(selectedClassroom)
+  const classroomBadge = getClassroomBadge(selectedClassroom, classrooms)
 
   // Estatísticas rápidas
   const countPresent = Object.values(attendances).filter((a) => a.status === 'present').length
@@ -237,10 +239,11 @@ export default function AttendancePage() {
                 <SelectValue placeholder="Selecione a sala" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="A">Sala A (3 a 5 anos - Maternal/Jardim)</SelectItem>
-                <SelectItem value="B">Sala B (6 a 8 anos - Ciclo 1)</SelectItem>
-                <SelectItem value="C">Sala C (9 a 11 anos - Ciclo 2)</SelectItem>
-                <SelectItem value="D">Sala D (12 a 14 anos - Juventude 1)</SelectItem>
+                {classrooms.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name} ({c.minAge} a {c.maxAge} anos)
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -447,7 +450,7 @@ export default function AttendancePage() {
           <Save className="h-5 w-5 mr-2" />
           {saving
             ? 'Gravando presenças no servidor...'
-            : `Salvar Chamada da Sala ${selectedClassroom}`}
+            : `Salvar Chamada da ${classrooms.find((c) => c.id === selectedClassroom)?.name || `Sala ${selectedClassroom}`}`}
         </Button>
       </div>
     </div>

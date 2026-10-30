@@ -26,9 +26,21 @@ import {
 import { KeyRound, UserPlus, Calendar, BookOpen, Coins, Trash2, AlertTriangle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
+import { useAcademic, SchoolYearConfig, RecessSaturday } from '@/contexts/AcademicContext'
+import { syncOrRegenerateCalendar } from '@/services/calendarGenerator'
+import { Plus, X, Sliders, RefreshCw } from 'lucide-react'
+
 export default function SettingsPage() {
   const { toast } = useToast()
   const { user: currentUser } = useAuth()
+  const {
+    classrooms,
+    schoolYear: academicYear,
+    recessSaturdays: academicRecesses,
+    saveClassrooms,
+    saveSchoolYearAndRecesses,
+  } = useAcademic()
+
   const [users, setUsers] = useState<User[]>([])
   const [settings, setSettings] = useState<Record<string, any>>({})
   const [loading, setLoading] = useState(true)
@@ -69,6 +81,30 @@ export default function SettingsPage() {
     goodBehaviorReward: 5,
     defaultRewardCost: 20,
   })
+
+  // Edição de Ano Letivo e Feriados
+  const [yearForm, setYearForm] = useState<SchoolYearConfig>(academicYear)
+  const [recessList, setRecessList] = useState<RecessSaturday[]>(academicRecesses)
+  const [newRecessDate, setNewRecessDate] = useState('')
+  const [newRecessName, setNewRecessName] = useState('')
+  const [savingYear, setSavingYear] = useState(false)
+  const [syncingCalendar, setSyncingCalendar] = useState(false)
+
+  // Edição de Salas no Settings
+  const [editingRooms, setEditingRooms] = useState(classrooms)
+  const [savingRooms, setSavingRooms] = useState(false)
+
+  useEffect(() => {
+    setYearForm(academicYear)
+  }, [academicYear])
+
+  useEffect(() => {
+    setRecessList(academicRecesses)
+  }, [academicRecesses])
+
+  useEffect(() => {
+    setEditingRooms(classrooms)
+  }, [classrooms])
 
   useEffect(() => {
     loadData()
@@ -222,6 +258,112 @@ export default function SettingsPage() {
       toast({ title: 'Regras da moeda DimDim salvas!' })
     } catch (err: any) {
       toast({ title: 'Erro ao salvar', description: err?.message, variant: 'destructive' })
+    }
+  }
+
+  const handleSaveYearAndHolidays = async () => {
+    try {
+      setSavingYear(true)
+      // Se houver recesso de meio de ano preenchido, assegura que seus sábados estejam na lista
+      const updatedRecesses = [...recessList]
+      if (yearForm.winterBreakStart && yearForm.winterBreakEnd) {
+        // Valida se os sábados do período já estão ou não adicionados
+        const start = new Date(yearForm.winterBreakStart)
+        const end = new Date(yearForm.winterBreakEnd)
+        let cur = new Date(start)
+        while (cur <= end) {
+          if (cur.getUTCDay() === 6) {
+            const dateStr = cur.toISOString().split('T')[0]
+            if (!updatedRecesses.some((r) => r.date === dateStr)) {
+              updatedRecesses.push({
+                date: dateStr,
+                name: 'Férias de Julho / Recesso Escolar',
+              })
+            }
+          }
+          cur.setUTCDate(cur.getUTCDate() + 1)
+        }
+        updatedRecesses.sort((a, b) => a.date.localeCompare(b.date))
+        setRecessList(updatedRecesses)
+      }
+
+      await saveSchoolYearAndRecesses(yearForm, updatedRecesses)
+      toast({
+        title: 'Ano Letivo e Feriados Atualizados!',
+        description: `Configurações para ${yearForm.year} salvas com sucesso no CEP-Coligação Espírita Progressista.`,
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao salvar ano letivo',
+        description: err?.message || 'Falha ao salvar.',
+        variant: 'destructive',
+      })
+    } finally {
+      setSavingYear(false)
+    }
+  }
+
+  const handleSyncCalendarDates = async () => {
+    try {
+      setSyncingCalendar(true)
+      // Primeiro salva as configurações
+      await saveSchoolYearAndRecesses(yearForm, recessList)
+      // Em seguida sincroniza o calendário de sábados de forma segura (preserva temas, planos e presenças)
+      const res = await syncOrRegenerateCalendar(yearForm, recessList)
+      toast({
+        title: 'Calendário sincronizado com sucesso!',
+        description:
+          res.action === 'updated_dates'
+            ? `As datas dos ${res.count} sábados foram ajustadas às novas janelas sem perder planos ou presenças.`
+            : `Foram gerados ${res.count} sábados letivos para o ano ${yearForm.year}.`,
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao sincronizar calendário',
+        description: err?.message || 'Falha na sincronização.',
+        variant: 'destructive',
+      })
+    } finally {
+      setSyncingCalendar(false)
+    }
+  }
+
+  const handleAddRecess = () => {
+    if (!newRecessDate || !newRecessName) {
+      toast({
+        title: 'Dados incompletos',
+        description: 'Informe a data e o nome do recesso/feriado.',
+        variant: 'destructive',
+      })
+      return
+    }
+    const updated = [...recessList, { date: newRecessDate, name: newRecessName }]
+    updated.sort((a, b) => a.date.localeCompare(b.date))
+    setRecessList(updated)
+    setNewRecessDate('')
+    setNewRecessName('')
+  }
+
+  const handleRemoveRecess = (indexToRemove: number) => {
+    setRecessList(recessList.filter((_, i) => i !== indexToRemove))
+  }
+
+  const handleSaveRooms = async () => {
+    try {
+      setSavingRooms(true)
+      await saveClassrooms(editingRooms)
+      toast({
+        title: 'Configurações de salas salvas!',
+        description: 'Os nomes e faixas etárias foram atualizados em todo o sistema.',
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao salvar salas',
+        description: err?.message || 'Falha ao salvar.',
+        variant: 'destructive',
+      })
+    } finally {
+      setSavingRooms(false)
     }
   }
 
@@ -520,41 +662,284 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-            {/* Ano Letivo e Feriados 2027 */}
+            {/* Salas e Faixas Etárias Editáveis */}
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <Sliders className="h-4 w-4 text-indigo-600" />
+                  Configuração de Salas e Faixas Etárias
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Personalize os nomes/rótulos (ex: <em>Sala D (Responsáveis)</em>) e as idades
+                  mínima e máxima. As faixas definem a classificação automática das crianças em 1º
+                  de março.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {editingRooms.map((room, idx) => (
+                    <div
+                      key={room.id}
+                      className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <Badge className="bg-indigo-600 text-white font-bold text-xs">
+                          Sala {room.id}
+                        </Badge>
+                        <span className="text-[11px] text-muted-foreground">
+                          Faixa: {room.minAge} a {room.maxAge} anos
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-[11px]">Nome / Rótulo da Sala</Label>
+                        <Input
+                          value={room.name}
+                          onChange={(e) => {
+                            const updated = [...editingRooms]
+                            updated[idx] = { ...updated[idx], name: e.target.value }
+                            setEditingRooms(updated)
+                          }}
+                          placeholder={`Nome da Sala ${room.id}`}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-[11px]">Idade Mín.</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={99}
+                            value={room.minAge}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10) || 0
+                              const updated = [...editingRooms]
+                              updated[idx] = { ...updated[idx], minAge: val }
+                              setEditingRooms(updated)
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[11px]">Idade Máx.</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={99}
+                            value={room.maxAge}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10) || 0
+                              const updated = [...editingRooms]
+                              updated[idx] = { ...updated[idx], maxAge: val }
+                              setEditingRooms(updated)
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">Descrição</Label>
+                        <Input
+                          value={room.description || ''}
+                          onChange={(e) => {
+                            const updated = [...editingRooms]
+                            updated[idx] = { ...updated[idx], description: e.target.value }
+                            setEditingRooms(updated)
+                          }}
+                          placeholder="Descrição da turma"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <Button
+                  onClick={handleSaveRooms}
+                  disabled={savingRooms}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white w-full sm:w-auto"
+                >
+                  {savingRooms ? 'Salvando...' : 'Salvar Configurações de Salas'}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Ano Letivo 2027 e Janelas de Feriados - EDITÁVEL */}
             <Card className="md:col-span-2">
               <CardHeader>
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-indigo-600" />
-                  Ano Letivo 2027 e Janelas de Feriados
+                  Ano Letivo {yearForm.year || 2027} e Janelas de Feriados
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Datas carregadas automaticamente para o calendário dos 30 sábados de 2027
+                  Configuração aberta: defina o ano, a data de início, as datas do recesso de meio
+                  de ano (férias), a data da festa de Natal e os sábados com recesso institucional
+                  no <strong>CEP-Coligação Espírita Progressista</strong>.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="text-xs space-y-2">
-                <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border space-y-1.5">
-                  <div className="flex justify-between font-semibold">
-                    <span>Início do Ano Letivo:</span>
-                    <span>06 de Março de 2027</span>
+              <CardContent className="text-xs space-y-4">
+                {/* Linha 1: Parâmetros do Calendário */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-3.5 rounded-lg bg-slate-50 dark:bg-slate-900 border">
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold">Ano Letivo</Label>
+                    <Input
+                      type="number"
+                      value={yearForm.year}
+                      onChange={(e) =>
+                        setYearForm({
+                          ...yearForm,
+                          year: parseInt(e.target.value, 10) || 2027,
+                          ageBaseDate: `${parseInt(e.target.value, 10) || 2027}-03-01`,
+                        })
+                      }
+                    />
                   </div>
-                  <div className="flex justify-between font-semibold">
-                    <span>Encerramento:</span>
-                    <span>27 de Novembro de 2027</span>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold">Data de Início das Aulas</Label>
+                    <Input
+                      type="date"
+                      value={yearForm.startDate}
+                      onChange={(e) => setYearForm({ ...yearForm, startDate: e.target.value })}
+                    />
                   </div>
-                  <div className="flex justify-between font-semibold">
-                    <span>Data de Corte para Idade:</span>
-                    <span>01 de Março de 2027</span>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold">Data de Encerramento (Prevista)</Label>
+                    <Input
+                      type="date"
+                      value={yearForm.endDate || ''}
+                      onChange={(e) => setYearForm({ ...yearForm, endDate: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold">
+                      Início do Recesso de Meio de Ano
+                    </Label>
+                    <Input
+                      type="date"
+                      value={yearForm.winterBreakStart || ''}
+                      onChange={(e) =>
+                        setYearForm({ ...yearForm, winterBreakStart: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold">Fim do Recesso de Meio de Ano</Label>
+                    <Input
+                      type="date"
+                      value={yearForm.winterBreakEnd || ''}
+                      onChange={(e) => setYearForm({ ...yearForm, winterBreakEnd: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold">Data da Festa de Natal</Label>
+                    <Input
+                      type="date"
+                      value={yearForm.christmasDate || ''}
+                      onChange={(e) => setYearForm({ ...yearForm, christmasDate: e.target.value })}
+                    />
                   </div>
                 </div>
 
-                <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border space-y-1">
-                  <p className="font-semibold text-slate-800 dark:text-slate-200">
-                    Feriados e Recessos Excluídos do Calendário:
-                  </p>
-                  <p className="text-muted-foreground text-[11px]">
-                    Sábado de Páscoa (27/03), Tiradentes (17/04), Dia do Trabalho (01/05), Corpus
-                    Christi (29/05), Férias de Julho (10/07 e 17/07), Independência (04/09), N. Sra.
-                    Aparecida (09/10), Finados (30/10) e Proclamação da República (13/11).
+                {/* Linha 2: Sábados com Recesso Configurados */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      Sábados com Recesso / Feriados Excluídos do Calendário ({recessList.length})
+                    </Label>
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto space-y-1.5 border rounded-lg p-2 bg-slate-50/50 dark:bg-slate-900/30">
+                    {recessList.map((rec, i) => (
+                      <div
+                        key={`${rec.date}-${i}`}
+                        className="flex items-center justify-between p-2 rounded bg-white dark:bg-slate-900 border text-xs"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="font-mono text-[10px]">
+                            {rec.date}
+                          </Badge>
+                          <span className="font-medium text-slate-800 dark:text-slate-200">
+                            {rec.name}
+                          </span>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleRemoveRecess(i)}
+                          className="h-7 w-7 p-0 text-rose-600 hover:text-rose-800 hover:bg-rose-50"
+                          title="Remover recesso"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Formulário para Adicionar Sábado com Recesso */}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1 items-end">
+                    <div className="sm:col-span-4 space-y-1">
+                      <Label className="text-[11px]">Data do Sábado de Recesso</Label>
+                      <Input
+                        type="date"
+                        value={newRecessDate}
+                        onChange={(e) => setNewRecessDate(e.target.value)}
+                      />
+                    </div>
+                    <div className="sm:col-span-6 space-y-1">
+                      <Label className="text-[11px]">Nome / Motivo do Recesso</Label>
+                      <Input
+                        placeholder="Ex: Sábado de Páscoa ou Recesso Municipal"
+                        value={newRecessName}
+                        onChange={(e) => setNewRecessName(e.target.value)}
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleAddRecess}
+                        className="w-full text-xs h-9"
+                      >
+                        <Plus className="h-3.5 w-3.5 mr-1" />
+                        Adicionar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                    <Button
+                      onClick={handleSaveYearAndHolidays}
+                      disabled={savingYear || syncingCalendar}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white w-full sm:w-auto"
+                    >
+                      {savingYear ? 'Salvando...' : 'Salvar Ano Letivo e Datas'}
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleSyncCalendarDates}
+                      disabled={savingYear || syncingCalendar}
+                      className="border-indigo-300 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 w-full sm:w-auto"
+                      title="Sincroniza as datas das aulas respeitando a data de início e os recessos configurados"
+                    >
+                      <RefreshCw
+                        className={`h-3.5 w-3.5 mr-1.5 ${syncingCalendar ? 'animate-spin' : ''}`}
+                      />
+                      {syncingCalendar ? 'Sincronizando...' : 'Sincronizar Calendário de Sábados'}
+                    </Button>
+                  </div>
+
+                  <p className="text-[11px] text-muted-foreground">
+                    As datas salvas definem o cálculo de corte de idade (01/03) e a geração de
+                    sábados.
                   </p>
                 </div>
               </CardContent>

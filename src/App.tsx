@@ -3,6 +3,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from './contexts/AuthContext'
+import { AcademicProvider } from './contexts/AcademicContext'
 
 import Layout from './components/Layout'
 import Index from './pages/Index'
@@ -18,25 +19,27 @@ import NotFound from './pages/NotFound'
 const App = () => (
   <BrowserRouter>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <Routes>
-          <Route path="/login" element={<Login />} />
+      <AcademicProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            <Route path="/login" element={<Login />} />
 
-          <Route element={<Layout />}>
-            <Route path="/" element={<Index />} />
-            <Route path="/familias" element={<FamiliesPage />} />
-            <Route path="/calendario" element={<CalendarPage />} />
-            <Route path="/presenca" element={<AttendancePage />} />
-            <Route path="/biblioteca" element={<LibraryPage />} />
-            <Route path="/dimdim" element={<DimDimPage />} />
-            <Route path="/configuracoes" element={<SettingsPage />} />
-          </Route>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/familias" element={<FamiliesPage />} />
+              <Route path="/calendario" element={<CalendarPage />} />
+              <Route path="/presenca" element={<AttendancePage />} />
+              <Route path="/biblioteca" element={<LibraryPage />} />
+              <Route path="/dimdim" element={<DimDimPage />} />
+              <Route path="/configuracoes" element={<SettingsPage />} />
+            </Route>
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </TooltipProvider>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </TooltipProvider>
+      </AcademicProvider>
     </AuthProvider>
   </BrowserRouter>
 )

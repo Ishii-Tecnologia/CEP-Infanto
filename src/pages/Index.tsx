@@ -6,6 +6,7 @@ import { familyService } from '@/services/families'
 import { libraryService } from '@/services/library'
 import { Lesson, BookLoan, Family } from '@/types'
 import { formatDate, getClassroomBadge } from '@/lib/academic'
+import { useAcademic } from '@/contexts/AcademicContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -26,6 +27,7 @@ import {
 export default function Index() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { classrooms, schoolYear } = useAcademic()
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [overdueLoans, setOverdueLoans] = useState<BookLoan[]>([])
   const [families, setFamilies] = useState<Family[]>([])
@@ -40,7 +42,7 @@ export default function Index() {
     try {
       setLoading(true)
       const [allLessons, allLoans, allFamilies] = await Promise.all([
-        lessonService.getAll(2027),
+        lessonService.getAll(schoolYear.year || 2027),
         libraryService.getAllLoans(),
         familyService.getAll(),
       ])
@@ -221,7 +223,7 @@ export default function Index() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {(nextLesson?.plans || []).map((plan) => {
-                  const badge = getClassroomBadge(plan.classroom)
+                  const badge = getClassroomBadge(plan.classroom, classrooms)
                   return (
                     <div
                       key={plan.id}
@@ -378,12 +380,13 @@ export default function Index() {
                 <p className="font-semibold text-slate-800 dark:text-slate-200">
                   Classificação por Idade:
                 </p>
-                <p>Corte em 1º de março de 2027:</p>
+                <p>Corte em 1º de março de {schoolYear.year || 2027}:</p>
                 <ul className="list-disc list-inside mt-1 space-y-0.5 text-[11px]">
-                  <li>Sala A: 3 a 5 anos (Maternal/Jardim)</li>
-                  <li>Sala B: 6 a 8 anos (Ciclo 1)</li>
-                  <li>Sala C: 9 a 11 anos (Ciclo 2)</li>
-                  <li>Sala D: 12 a 14 anos (Juventude 1)</li>
+                  {classrooms.map((c) => (
+                    <li key={c.id}>
+                      {c.name}: {c.minAge} a {c.maxAge} anos
+                    </li>
+                  ))}
                 </ul>
               </div>
 
