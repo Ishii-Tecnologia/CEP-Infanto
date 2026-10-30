@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { BookOpen, Heart, Sparkles, CheckCircle2 } from 'lucide-react'
+import { BookOpen, Heart, CheckCircle2 } from 'lucide-react'
 import { settingsService } from '@/services/settings'
 
 export default function Login() {
@@ -71,12 +71,18 @@ export default function Login() {
       <div className="md:w-5/12 bg-gradient-to-br from-indigo-900 via-indigo-800 to-sky-900 text-white p-8 md:p-12 flex flex-col justify-between">
         <div>
           <div className="flex items-center space-x-3 mb-6">
-            <div className="h-12 w-12 rounded-xl bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center text-amber-300">
-              <Sparkles className="h-6 w-6" />
+            <div className="h-11 w-11 rounded-lg bg-sky-800/80 p-1.5 flex items-center justify-center shadow-inner border border-sky-600/50 shrink-0">
+              <img
+                src="/favicon.ico"
+                alt="Ícone CEP-Coligação Espírita Progressista"
+                className="h-full w-full object-contain"
+              />
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Educação Espírita Infantil</h1>
-              <p className="text-xs text-sky-200">CEP-Coligação Espírita Progressista</p>
+              <p className="text-xs text-sky-200 font-medium">
+                CEP-Coligação Espírita Progressista
+              </p>
             </div>
           </div>
 
