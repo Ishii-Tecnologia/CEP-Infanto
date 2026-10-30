@@ -11,6 +11,7 @@ import Login from './pages/Login'
 import FamiliesPage from './pages/Families'
 import CalendarPage from './pages/Calendar'
 import AttendancePage from './pages/Attendance'
+import AttendanceReportsPage from './pages/AttendanceReports'
 import LibraryPage from './pages/Library'
 import DimDimPage from './pages/DimDim'
 import SettingsPage from './pages/Settings'
@@ -31,6 +32,7 @@ const App = () => (
               <Route path="/familias" element={<FamiliesPage />} />
               <Route path="/calendario" element={<CalendarPage />} />
               <Route path="/presenca" element={<AttendancePage />} />
+              <Route path="/relatorios" element={<AttendanceReportsPage />} />
               <Route path="/biblioteca" element={<LibraryPage />} />
               <Route path="/dimdim" element={<DimDimPage />} />
               <Route path="/configuracoes" element={<SettingsPage />} />

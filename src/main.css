@@ -288,3 +288,47 @@
     animation: spotlight 2s ease forwards;
   }
 }
+
+/* Regras de Estilo para Impressão Limpa do Relatório */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 10mm 12mm 10mm;
+  }
+
+  body {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  header,
+  nav,
+  aside,
+  button,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  th,
+  td {
+    padding: 6px 8px !important;
+    font-size: 10pt !important;
+  }
+
+  .border {
+    border-color: #cbd5e1 !important;
+  }
+}

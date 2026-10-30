@@ -18,6 +18,7 @@ import {
   Users,
   Calendar,
   ClipboardCheck,
+  BarChart3,
   BookMarked,
   Coins,
   Settings,
@@ -76,6 +77,13 @@ export default function Layout() {
       path: '/presenca',
       icon: ClipboardCheck,
       roles: ['admin', 'dirigente', 'professor', 'auxiliar'] as UserRole[],
+    },
+    {
+      title: 'Relatórios',
+      shortTitle: 'Relatórios',
+      path: '/relatorios',
+      icon: BarChart3,
+      roles: ['admin', 'dirigente', 'professor'] as UserRole[],
     },
     {
       title: 'Biblioteca',
