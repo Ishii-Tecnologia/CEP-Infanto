@@ -49,42 +49,49 @@ export default function Layout() {
   const navItems = [
     {
       title: 'Painel',
+      shortTitle: 'Painel',
       path: '/',
       icon: LayoutDashboard,
       roles: ['admin', 'dirigente', 'professor', 'auxiliar', 'bibliotecario'] as UserRole[],
     },
     {
       title: 'Famílias & Crianças',
+      shortTitle: 'Famílias',
       path: '/familias',
       icon: Users,
       roles: ['admin', 'dirigente', 'professor', 'auxiliar'] as UserRole[],
     },
     {
       title: 'Calendário & Planos',
+      shortTitle: 'Calendário',
       path: '/calendario',
       icon: Calendar,
       roles: ['admin', 'dirigente', 'professor', 'auxiliar'] as UserRole[],
     },
     {
       title: 'Chamada / Presença',
+      shortTitle: 'Presença',
       path: '/presenca',
       icon: ClipboardCheck,
       roles: ['admin', 'dirigente', 'professor', 'auxiliar'] as UserRole[],
     },
     {
       title: 'Biblioteca',
+      shortTitle: 'Biblioteca',
       path: '/biblioteca',
       icon: BookMarked,
       roles: ['admin', 'dirigente', 'bibliotecario', 'professor'] as UserRole[],
     },
     {
       title: 'Moeda DimDim',
+      shortTitle: 'DimDim',
       path: '/dimdim',
       icon: Coins,
       roles: ['admin', 'dirigente', 'professor', 'auxiliar'] as UserRole[],
     },
     {
-      title: 'Operadores & Config',
+      title: 'Configurações',
+      shortTitle: 'Configurações',
       path: '/configuracoes',
       icon: Settings,
       roles: ['admin', 'dirigente'] as UserRole[],
@@ -215,30 +222,32 @@ export default function Layout() {
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
       {/* Barra de Navegação Superior (Menu Superior Horizontal) */}
       <header className="sticky top-0 z-40 bg-slate-900 text-white shadow-md border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 gap-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+          <div className="flex items-center justify-between min-h-[3.75rem] py-2 gap-2 sm:gap-3">
             {/* Lado Esquerdo: Identidade Institucional CEP */}
-            <div className="flex items-center space-x-3 shrink-0">
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-amber-400 to-indigo-500 flex items-center justify-center text-white shadow-md">
+            <NavLink
+              to="/"
+              className="flex items-center space-x-2.5 shrink-0 hover:opacity-95 transition-opacity"
+              title="Página Inicial"
+            >
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-amber-400 to-indigo-500 flex items-center justify-center text-white shadow-md shrink-0">
                 <Sparkles className="h-5 w-5 text-amber-100" />
               </div>
-              <div className="hidden sm:block">
-                <h1 className="font-bold text-sm leading-tight text-white">
+              <div className="min-w-0">
+                <h1 className="font-bold text-xs sm:text-sm leading-tight text-white tracking-tight">
                   CEP-Coligação Espírita Progressista
                 </h1>
-                <p className="text-[11px] text-slate-400 leading-tight">
+                <p className="text-[10px] sm:text-[11px] text-slate-400 leading-tight hidden xs:block">
                   Educação Espírita Infantil & Juventude
                 </p>
               </div>
-              <div className="sm:hidden">
-                <h1 className="font-bold text-xs leading-tight text-white truncate max-w-[190px]">
-                  CEP-Coligação Espírita Progressista
-                </h1>
-              </div>
-            </div>
+            </NavLink>
 
-            {/* Centro / Itens de Navegação no Desktop */}
-            <nav className="hidden lg:flex items-center space-x-1 overflow-x-auto py-1">
+            {/* Centro / Itens de Navegação no Desktop (sem rolagem horizontal, sempre visíveis) */}
+            <nav
+              aria-label="Menu principal"
+              className="hidden lg:flex items-center flex-wrap justify-center gap-1 sm:gap-1.5 py-1"
+            >
               {filteredNavItems.map((item) => {
                 const Icon = item.icon
                 return (
@@ -246,28 +255,30 @@ export default function Layout() {
                     key={item.path}
                     to={item.path}
                     className={({ isActive }) =>
-                      `flex items-center space-x-2 px-3 py-2 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                      `flex items-center space-x-1.5 px-2.5 xl:px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
                         isActive
                           ? 'bg-indigo-600 text-white shadow-sm font-semibold'
                           : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                       }`
                     }
                   >
-                    <Icon className="h-3.5 w-3.5 shrink-0" />
-                    <span>{item.title}</span>
+                    <Icon className="h-3.5 w-3.5 shrink-0 text-slate-300" />
+                    {/* Em telas menores de 1280px (lg), exibe título conciso para caber com folga; em xl+, exibe completo */}
+                    <span className="hidden xl:inline">{item.title}</span>
+                    <span className="inline xl:hidden">{item.shortTitle}</span>
                   </NavLink>
                 )
               })}
             </nav>
 
-            {/* Lado Direito: Usuário, Papel, Alternar Perfil e Sair (Desktop & Tablet) */}
-            <div className="flex items-center space-x-2 shrink-0">
+            {/* Lado Direito: Usuário, Papel, Alternar Perfil e Sair (Desktop & Mobile) */}
+            <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
               {/* Usuário e Perfil em telas médias/grandes */}
               <div className="hidden md:flex items-center space-x-2 pr-1 border-r border-slate-800">
                 <div className="h-7 w-7 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold uppercase shrink-0">
                   {user?.name?.slice(0, 2) || 'US'}
                 </div>
-                <div className="text-right max-w-[130px] truncate">
+                <div className="text-right max-w-[110px] xl:max-w-[130px] truncate">
                   <p className="text-xs font-medium text-white truncate leading-none">
                     {user?.name}
                   </p>
@@ -280,7 +291,7 @@ export default function Layout() {
                 </div>
               </div>
 
-              {/* Menu rápido de papel (demo) no Desktop */}
+              {/* Menu rápido de papel (demo) */}
               <div className="hidden sm:block">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -288,10 +299,10 @@ export default function Layout() {
                       variant="ghost"
                       size="sm"
                       className="text-xs h-8 text-slate-300 hover:text-white hover:bg-slate-800 px-2 gap-1.5"
-                      title="Alternar perfil"
+                      title="Alternar perfil de acesso"
                     >
                       <UserCheck className="h-3.5 w-3.5 text-indigo-400" />
-                      <span className="hidden xl:inline">Papel</span>
+                      <span className="hidden 2xl:inline">Papel</span>
                       <ChevronDown className="h-3 w-3 opacity-50" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -327,13 +338,13 @@ export default function Layout() {
                 <LogOut className="h-4 w-4" />
               </Button>
 
-              {/* Botão Hamburguer para Mobile e Tablet Médio */}
+              {/* Botão Hamburguer para Mobile e Tablets pequenos (abaixo de md) */}
               <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
                 <SheetTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="lg:hidden text-white hover:bg-slate-800 h-9 w-9"
+                    className="md:hidden text-white hover:bg-slate-800 h-9 w-9"
                     aria-label="Abrir menu de navegação"
                   >
                     <Menu className="h-5 w-5" />
@@ -349,8 +360,12 @@ export default function Layout() {
             </div>
           </div>
 
-          {/* Sub-barra de rolagem horizontal com ícones para tablets intermediários (md até lg) */}
-          <div className="hidden md:flex lg:hidden overflow-x-auto py-2 border-t border-slate-800 gap-1 scrollbar-none">
+          {/* Sub-barra de navegação para telas intermediárias (md até lg):
+              Flex-wrap para exibir TODAS as opções de uma vez, organizadas sem qualquer barra de rolagem horizontal */}
+          <nav
+            aria-label="Menu de opções secundário em telas intermediárias"
+            className="hidden md:flex lg:hidden flex-wrap items-center justify-center gap-1.5 py-2 border-t border-slate-800"
+          >
             {filteredNavItems.map((item) => {
               const Icon = item.icon
               return (
@@ -360,7 +375,7 @@ export default function Layout() {
                   className={({ isActive }) =>
                     `flex items-center space-x-1.5 px-2.5 py-1.5 rounded text-xs font-medium transition-colors whitespace-nowrap ${
                       isActive
-                        ? 'bg-indigo-600 text-white font-semibold'
+                        ? 'bg-indigo-600 text-white font-semibold shadow-sm'
                         : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                     }`
                   }
@@ -370,7 +385,7 @@ export default function Layout() {
                 </NavLink>
               )
             })}
-          </div>
+          </nav>
         </div>
       </header>
 
