@@ -147,15 +147,25 @@ export default function SettingsPage() {
 
   const handleResetPassword = async () => {
     if (!selectedUser) return
+    if (!newPassword || newPassword.length < 8) {
+      toast({
+        title: 'Atenção',
+        description: 'A nova senha deve ter no mínimo 8 caracteres.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     try {
       await settingsService.resetUserPassword(selectedUser.id, newPassword)
       toast({
         title: 'Senha redefinida com sucesso!',
-        description: `Nova senha do operador: ${newPassword}`,
+        description: `Nova senha definida para ${selectedUser.name}: ${newPassword}`,
       })
       setResetModalOpen(false)
     } catch (err: any) {
-      toast({ title: 'Erro ao redefinir', description: err?.message, variant: 'destructive' })
+      const errMsg = err?.data?.message || err?.message || 'Falha ao atualizar registro de usuário.'
+      toast({ title: 'Erro ao redefinir senha', description: errMsg, variant: 'destructive' })
     }
   }
 

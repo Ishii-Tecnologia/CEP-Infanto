@@ -67,10 +67,23 @@ export const settingsService = {
   },
 
   async resetUserPassword(id: string, newPass = 'Skip@Pass'): Promise<void> {
-    await pb.collection('users').update(id, {
-      password: newPass,
-      passwordConfirm: newPass,
-    })
+    try {
+      // Tenta via endpoint do backend dedicado para redefinição por admin/dirigente
+      await pb.send('/backend/v1/reset-operator-password', {
+        method: 'POST',
+        body: {
+          userId: id,
+          newPassword: newPass,
+        },
+      })
+    } catch (endpointError: any) {
+      console.warn('Fallback para update direto da coleção users:', endpointError)
+      // Fallback para update direto da coleção users caso o hook não responda
+      await pb.collection('users').update(id, {
+        password: newPass,
+        passwordConfirm: newPass,
+      })
+    }
   },
 
   async requestPasswordReset(email: string): Promise<void> {
