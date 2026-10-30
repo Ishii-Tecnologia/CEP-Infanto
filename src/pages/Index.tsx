@@ -71,13 +71,13 @@ export default function Index() {
   return (
     <div className="space-y-6">
       {/* Boas-vindas e Cabeçalho do Painel */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-gradient-to-r from-indigo-900 via-indigo-800 to-sky-900 text-white p-6 rounded-2xl shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-gradient-to-r from-sky-600 via-blue-600 to-sky-700 text-white p-6 rounded-2xl shadow-sm">
         <div>
           <div className="flex items-center gap-2 text-amber-300 text-xs font-semibold uppercase tracking-wider mb-1">
             <Sparkles className="h-4 w-4" />
             Ano Letivo 2027 • Evangelização Infantil
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
             Olá, {user?.name || 'Educador(a)'}!
           </h1>
           <p className="text-sm text-sky-100 mt-1 max-w-2xl">
@@ -97,7 +97,7 @@ export default function Index() {
           <Button
             onClick={() => navigate('/familias')}
             variant="outline"
-            className="border-white/20 text-white hover:bg-white/10"
+            className="border-white/30 text-white hover:bg-white/15"
           >
             <Users className="h-4 w-4 mr-2" />
             Cadastros

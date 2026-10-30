@@ -113,10 +113,10 @@ export default function Layout() {
   const currentRoleInfo = user ? roleLabels[user.role] : { label: 'Usuário', color: '' }
 
   const MobileDrawerContent = () => (
-    <div className="flex flex-col h-full bg-teal-950 text-teal-50">
+    <div className="flex flex-col h-full bg-sky-900 text-sky-50">
       {/* Topo / Logotipo no menu móvel */}
-      <div className="p-4 border-b border-teal-800/60 flex items-center space-x-3 bg-teal-900/60">
-        <div className="h-9 w-9 rounded-lg bg-teal-800/80 p-1.5 flex items-center justify-center shadow-inner border border-teal-600/40 shrink-0">
+      <div className="p-4 border-b border-sky-800/60 flex items-center space-x-3 bg-sky-800/50">
+        <div className="h-9 w-9 rounded-lg bg-sky-700/80 p-1.5 flex items-center justify-center shadow-inner border border-sky-500/40 shrink-0">
           <img
             src="/favicon.ico"
             alt="Ícone CEP-Coligação Espírita Progressista"
@@ -127,7 +127,7 @@ export default function Layout() {
           <h2 className="font-bold text-sm leading-tight text-white truncate">
             CEP-Coligação Espírita Progressista
           </h2>
-          <p className="text-[11px] text-teal-200/80 leading-tight">
+          <p className="text-[11px] text-sky-200/90 leading-tight">
             Educação Espírita Infantil & Juventude
           </p>
         </div>
@@ -145,12 +145,12 @@ export default function Layout() {
               className={({ isActive }) =>
                 `flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-teal-600 text-white shadow-sm font-semibold'
-                    : 'text-teal-100 hover:bg-teal-800/60 hover:text-white'
+                    ? 'bg-sky-600 text-white shadow-sm font-semibold'
+                    : 'text-sky-100 hover:bg-sky-800/60 hover:text-white'
                 }`
               }
             >
-              <Icon className="h-4 w-4 shrink-0 text-teal-200" />
+              <Icon className="h-4 w-4 shrink-0 text-sky-200" />
               <span>{item.title}</span>
             </NavLink>
           )
@@ -158,10 +158,10 @@ export default function Layout() {
       </div>
 
       {/* Rodapé do usuário e troca de papel */}
-      <div className="p-4 border-t border-teal-800/60 bg-teal-950/90">
+      <div className="p-4 border-t border-sky-800/60 bg-sky-950/80">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-2.5 overflow-hidden">
-            <div className="h-8 w-8 rounded-full bg-teal-700 border border-teal-500/40 flex items-center justify-center text-white text-xs font-bold uppercase shrink-0">
+            <div className="h-8 w-8 rounded-full bg-sky-700 border border-sky-500/40 flex items-center justify-center text-white text-xs font-bold uppercase shrink-0">
               {user?.name?.slice(0, 2) || 'US'}
             </div>
             <div className="truncate">
@@ -182,10 +182,10 @@ export default function Layout() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="flex-1 justify-between text-xs h-8 text-teal-100 hover:text-white hover:bg-teal-800/60 px-2 border border-teal-700/50"
+                className="flex-1 justify-between text-xs h-8 text-sky-100 hover:text-white hover:bg-sky-800/60 px-2 border border-sky-700/50"
               >
                 <span className="flex items-center gap-1.5 truncate">
-                  <UserCheck className="h-3.5 w-3.5 text-teal-300 shrink-0" />
+                  <UserCheck className="h-3.5 w-3.5 text-sky-300 shrink-0" />
                   Mudar papel
                 </span>
                 <ChevronDown className="h-3 w-3 opacity-70 shrink-0" />
@@ -199,7 +199,7 @@ export default function Layout() {
                   <DropdownMenuItem
                     key={r}
                     onClick={() => switchRole(r)}
-                    className={`text-xs capitalize ${user?.role === r ? 'font-bold bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300' : ''}`}
+                    className={`text-xs capitalize ${user?.role === r ? 'font-bold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300' : ''}`}
                   >
                     <ShieldCheck className="h-3.5 w-3.5 mr-2" />
                     {roleLabels[r].label}
@@ -213,7 +213,7 @@ export default function Layout() {
             variant="ghost"
             size="icon"
             onClick={logout}
-            className="h-8 w-8 text-teal-200 hover:text-rose-300 hover:bg-teal-800/60 shrink-0"
+            className="h-8 w-8 text-sky-200 hover:text-rose-300 hover:bg-sky-800/60 shrink-0"
             title="Sair"
           >
             <LogOut className="h-4 w-4" />
@@ -225,8 +225,8 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
-      {/* Barra de Navegação Superior (Menu Superior Horizontal em tom verde-azulado / petróleo / teal) */}
-      <header className="sticky top-0 z-40 bg-teal-900 text-white shadow-md border-b border-teal-800">
+      {/* Barra de Navegação Superior (Menu Superior Horizontal em tom de azul mais claro / sky-700) */}
+      <header className="sticky top-0 z-40 bg-sky-700 text-white shadow-md border-b border-sky-800">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
           <div className="flex items-center justify-between min-h-[3.75rem] py-2 gap-2 sm:gap-3">
             {/* Lado Esquerdo: Identidade Institucional CEP com ícone do app */}
@@ -235,7 +235,7 @@ export default function Layout() {
               className="flex items-center space-x-2.5 shrink-0 hover:opacity-95 transition-opacity"
               title="Página Inicial - CEP-Coligação Espírita Progressista"
             >
-              <div className="h-9 w-9 rounded-lg bg-teal-800/90 p-1.5 flex items-center justify-center shadow-inner border border-teal-700/50 shrink-0">
+              <div className="h-9 w-9 rounded-lg bg-sky-800/80 p-1.5 flex items-center justify-center shadow-inner border border-sky-600/50 shrink-0">
                 <img
                   src="/favicon.ico"
                   alt="Ícone CEP-Coligação Espírita Progressista"
@@ -246,7 +246,7 @@ export default function Layout() {
                 <h1 className="font-bold text-xs sm:text-sm leading-tight text-white tracking-tight">
                   CEP-Coligação Espírita Progressista
                 </h1>
-                <p className="text-[10px] sm:text-[11px] text-teal-200/80 leading-tight hidden xs:block">
+                <p className="text-[10px] sm:text-[11px] text-sky-200/90 leading-tight hidden xs:block">
                   Educação Espírita Infantil & Juventude
                 </p>
               </div>
@@ -266,12 +266,12 @@ export default function Layout() {
                     className={({ isActive }) =>
                       `flex items-center space-x-1.5 px-2.5 xl:px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
                         isActive
-                          ? 'bg-teal-700 text-white shadow-sm font-semibold ring-1 ring-teal-500/50'
-                          : 'text-teal-100 hover:bg-teal-800/80 hover:text-white'
+                          ? 'bg-sky-800 text-white shadow-sm font-semibold ring-1 ring-sky-400/50'
+                          : 'text-sky-100 hover:bg-sky-600/70 hover:text-white'
                       }`
                     }
                   >
-                    <Icon className="h-3.5 w-3.5 shrink-0 text-teal-200" />
+                    <Icon className="h-3.5 w-3.5 shrink-0 text-sky-200" />
                     {/* Em telas menores de 1280px (lg), exibe título conciso para caber com folga; em xl+, exibe completo */}
                     <span className="hidden xl:inline">{item.title}</span>
                     <span className="inline xl:hidden">{item.shortTitle}</span>
@@ -283,8 +283,8 @@ export default function Layout() {
             {/* Lado Direito: Usuário, Papel, Alternar Perfil e Sair (Desktop & Mobile) */}
             <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
               {/* Usuário e Perfil em telas médias/grandes */}
-              <div className="hidden md:flex items-center space-x-2 pr-1 border-r border-teal-800">
-                <div className="h-7 w-7 rounded-full bg-teal-700 border border-teal-500/50 flex items-center justify-center text-white text-xs font-bold uppercase shrink-0">
+              <div className="hidden md:flex items-center space-x-2 pr-1 border-r border-sky-800">
+                <div className="h-7 w-7 rounded-full bg-sky-800 border border-sky-500/50 flex items-center justify-center text-white text-xs font-bold uppercase shrink-0">
                   {user?.name?.slice(0, 2) || 'US'}
                 </div>
                 <div className="text-right max-w-[110px] xl:max-w-[130px] truncate">
@@ -307,10 +307,10 @@ export default function Layout() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-xs h-8 text-teal-100 hover:text-white hover:bg-teal-800/80 px-2 gap-1.5 border border-transparent hover:border-teal-700/60"
+                      className="text-xs h-8 text-sky-100 hover:text-white hover:bg-sky-600/70 px-2 gap-1.5 border border-transparent hover:border-sky-500/60"
                       title="Alternar perfil de acesso"
                     >
-                      <UserCheck className="h-3.5 w-3.5 text-teal-300" />
+                      <UserCheck className="h-3.5 w-3.5 text-sky-300" />
                       <span className="hidden 2xl:inline">Papel</span>
                       <ChevronDown className="h-3 w-3 opacity-70" />
                     </Button>
@@ -326,7 +326,7 @@ export default function Layout() {
                       <DropdownMenuItem
                         key={r}
                         onClick={() => switchRole(r)}
-                        className={`text-xs capitalize ${user?.role === r ? 'font-bold bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300' : ''}`}
+                        className={`text-xs capitalize ${user?.role === r ? 'font-bold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300' : ''}`}
                       >
                         <ShieldCheck className="h-3.5 w-3.5 mr-2" />
                         {roleLabels[r].label}
@@ -341,7 +341,7 @@ export default function Layout() {
                 variant="ghost"
                 size="icon"
                 onClick={logout}
-                className="hidden sm:inline-flex h-8 w-8 text-teal-200 hover:text-rose-300 hover:bg-teal-800/80"
+                className="hidden sm:inline-flex h-8 w-8 text-sky-200 hover:text-rose-300 hover:bg-sky-600/70"
                 title="Sair do sistema"
               >
                 <LogOut className="h-4 w-4" />
@@ -353,7 +353,7 @@ export default function Layout() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="md:hidden text-white hover:bg-teal-800/80 h-9 w-9"
+                    className="md:hidden text-white hover:bg-sky-600/70 h-9 w-9"
                     aria-label="Abrir menu de navegação"
                   >
                     <Menu className="h-5 w-5" />
@@ -361,7 +361,7 @@ export default function Layout() {
                 </SheetTrigger>
                 <SheetContent
                   side="top"
-                  className="p-0 max-h-[85vh] border-b-teal-800 bg-teal-950 text-teal-50"
+                  className="p-0 max-h-[85vh] border-b-sky-800 bg-sky-900 text-sky-50"
                 >
                   <MobileDrawerContent />
                 </SheetContent>
@@ -373,7 +373,7 @@ export default function Layout() {
               Flex-wrap para exibir TODAS as opções de uma vez, organizadas sem qualquer barra de rolagem horizontal */}
           <nav
             aria-label="Menu de opções secundário em telas intermediárias"
-            className="hidden md:flex lg:hidden flex-wrap items-center justify-center gap-1.5 py-2 border-t border-teal-800/70"
+            className="hidden md:flex lg:hidden flex-wrap items-center justify-center gap-1.5 py-2 border-t border-sky-800/70"
           >
             {filteredNavItems.map((item) => {
               const Icon = item.icon
@@ -384,12 +384,12 @@ export default function Layout() {
                   className={({ isActive }) =>
                     `flex items-center space-x-1.5 px-2.5 py-1.5 rounded text-xs font-medium transition-colors whitespace-nowrap ${
                       isActive
-                        ? 'bg-teal-700 text-white font-semibold shadow-sm ring-1 ring-teal-500/50'
-                        : 'text-teal-100 hover:bg-teal-800/80 hover:text-white'
+                        ? 'bg-sky-800 text-white font-semibold shadow-sm ring-1 ring-sky-400/50'
+                        : 'text-sky-100 hover:bg-sky-600/70 hover:text-white'
                     }`
                   }
                 >
-                  <Icon className="h-3.5 w-3.5 shrink-0 text-teal-200" />
+                  <Icon className="h-3.5 w-3.5 shrink-0 text-sky-200" />
                   <span>{item.title}</span>
                 </NavLink>
               )
