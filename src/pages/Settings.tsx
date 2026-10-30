@@ -267,82 +267,126 @@ export default function SettingsPage() {
 
         {/* ABA 1: OPERADORES */}
         <TabsContent value="operadores" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {users.map((u) => {
               const rInfo = roleLabels[u.role] || { label: u.role, color: '' }
               const isActive = u.active !== false
+              const isCurrentUser = currentUser?.id === u.id
 
               return (
                 <Card
                   key={u.id}
-                  className={`p-4 space-y-3 ${!isActive ? 'opacity-60 bg-slate-50 dark:bg-slate-900/40' : ''}`}
+                  className={`flex flex-col justify-between border transition-all shadow-sm ${
+                    !isActive
+                      ? 'bg-slate-50/80 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 opacity-75'
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:shadow-md'
+                  }`}
                 >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                        {u.name}
-                      </h3>
-                      <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                  <CardHeader className="p-4 sm:p-5 pb-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3
+                            className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate"
+                            title={u.name}
+                          >
+                            {u.name}
+                          </h3>
+                          {isCurrentUser && (
+                            <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 dark:text-indigo-400 px-1.5 py-0.5 rounded shrink-0">
+                              Você
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate" title={u.email}>
+                          {u.email}
+                        </p>
+                      </div>
+
+                      <Badge
+                        variant="outline"
+                        className={`text-[11px] font-medium shrink-0 px-2 py-0.5 whitespace-nowrap border ${rInfo.color}`}
+                      >
+                        {rInfo.label}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="p-4 sm:p-5 pt-0 flex-1 flex flex-col justify-end space-y-3">
+                    {/* Linha de status do operador */}
+                    <div className="flex items-center justify-between py-2 border-y border-slate-100 dark:border-slate-800 text-xs">
+                      <span className="text-slate-500 dark:text-slate-400">Status:</span>
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`inline-block h-2 w-2 rounded-full ${
+                            isActive ? 'bg-emerald-500' : 'bg-rose-500'
+                          }`}
+                        />
+                        <span
+                          className={`font-semibold ${
+                            isActive
+                              ? 'text-emerald-700 dark:text-emerald-400'
+                              : 'text-rose-700 dark:text-rose-400'
+                          }`}
+                        >
+                          {isActive ? 'Ativo' : 'Inativo'}
+                        </span>
+                      </div>
                     </div>
 
-                    <Badge variant="outline" className={`text-xs ${rInfo.color}`}>
-                      {rInfo.label}
-                    </Badge>
-                  </div>
-
-                  <div className="pt-2 border-t flex items-center justify-between text-xs">
-                    <span
-                      className={
-                        isActive ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold'
-                      }
-                    >
-                      {isActive ? 'Ativo' : 'Inativo'}
-                    </span>
-
-                    <div className="flex items-center gap-1.5">
+                    {/* Grupo de ações com layout responsivo e alinhado */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1">
                       <Button
                         size="sm"
-                        variant="ghost"
+                        variant="outline"
                         onClick={() => {
                           setSelectedUser(u)
                           setNewPassword('Skip@Pass')
                           setResetModalOpen(true)
                         }}
-                        className="h-7 text-xs text-indigo-600 hover:text-indigo-800"
-                        title="Redefinir senha"
+                        className="h-8 text-xs text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900/50 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 font-medium px-2"
+                        title="Redefinir senha de acesso"
                       >
-                        <KeyRound className="h-3 w-3 mr-1" />
-                        Senha
+                        <KeyRound className="h-3.5 w-3.5 mr-1 shrink-0" />
+                        <span className="truncate">Senha</span>
                       </Button>
 
                       <Button
                         size="sm"
-                        variant="ghost"
+                        variant="outline"
                         onClick={() => handleToggleUserStatus(u)}
-                        className={`h-7 text-xs ${isActive ? 'text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40' : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'}`}
+                        className={`h-8 text-xs font-medium px-2 ${
+                          isActive
+                            ? 'text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/50 hover:bg-amber-50 dark:hover:bg-amber-950/40'
+                            : 'text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/50 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+                        }`}
                         title={isActive ? 'Desativar operador' : 'Reativar operador'}
                       >
-                        {isActive ? 'Desativar' : 'Reativar'}
+                        <span className="truncate">{isActive ? 'Desativar' : 'Reativar'}</span>
                       </Button>
 
-                      {/* Botão de Excluir Operador definitivo */}
-                      {currentUser?.id !== u.id && (
+                      {/* Botão de Excluir com lixeira */}
+                      {!isCurrentUser ? (
                         <Button
                           size="sm"
-                          variant="ghost"
+                          variant="outline"
                           onClick={() => {
                             setUserToDelete(u)
                             setDeleteModalOpen(true)
                           }}
-                          className="h-7 px-2 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-700"
+                          className="col-span-2 sm:col-span-1 h-8 text-xs text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/50 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-medium px-2"
                           title="Excluir operador definitivamente"
                         >
-                          <Trash2 className="h-3 w-3 mr-1" />
-                          Excluir
+                          <Trash2 className="h-3.5 w-3.5 mr-1 shrink-0" />
+                          <span className="truncate">Excluir</span>
                         </Button>
+                      ) : (
+                        <div className="col-span-2 sm:col-span-1 flex items-center justify-center text-[10px] text-muted-foreground italic h-8 border border-dashed rounded px-1 text-center">
+                          Sua conta
+                        </div>
                       )}
                     </div>
-                  </div>
+                  </CardContent>
                 </Card>
               )
             })}
