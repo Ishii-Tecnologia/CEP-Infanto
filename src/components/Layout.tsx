@@ -115,7 +115,9 @@ export default function Layout() {
         </div>
         <div>
           <h2 className="font-bold text-sm leading-tight text-white">Educação Espírita</h2>
-          <p className="text-xs text-slate-400">CEP — Infância & Juventude</p>
+          <p className="text-xs text-slate-400">
+            Centro Espírita Progressista — Infância & Juventude
+          </p>
         </div>
       </div>
 
@@ -225,7 +227,9 @@ export default function Layout() {
             <div className="h-7 w-7 rounded-lg bg-amber-400 flex items-center justify-center text-slate-900 font-bold text-xs">
               <Sparkles className="h-4 w-4" />
             </div>
-            <span className="font-bold text-sm tracking-tight">Educação Espírita CEP</span>
+            <span className="font-bold text-sm tracking-tight">
+              Centro Espírita Progressista — Educação Infantil
+            </span>
           </div>
 
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>

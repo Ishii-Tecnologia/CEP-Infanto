@@ -401,8 +401,8 @@ export default function CalendarPage() {
           <DialogHeader>
             <DialogTitle>Cancelar Aula do Sábado</DialogTitle>
             <DialogDescription className="text-xs">
-              Informe o motivo do cancelamento (ex: feriado prolongado, recesso, evento CEP). O
-              plano pedagógico continuará preservado no histórico.
+              Informe o motivo do cancelamento (ex: feriado prolongado, recesso, evento do Centro
+              Espírita Progressista). O plano pedagógico continuará preservado no histórico.
             </DialogDescription>
           </DialogHeader>
 
