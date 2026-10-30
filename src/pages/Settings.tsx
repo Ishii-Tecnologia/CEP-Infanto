@@ -320,7 +320,7 @@ export default function SettingsPage() {
                     }
                   />
                   <p className="text-[11px] text-muted-foreground">
-                    Padrão Centro Espírita Progressista: 2 exemplares
+                    Padrão CEP-Coligação Espírita Progressista: 2 exemplares
                   </p>
                 </div>
 
@@ -339,7 +339,7 @@ export default function SettingsPage() {
                     }
                   />
                   <p className="text-[11px] text-muted-foreground">
-                    Padrão Centro Espírita Progressista: 7 dias (de um sábado ao outro)
+                    Padrão CEP-Coligação Espírita Progressista: 7 dias (de um sábado ao outro)
                   </p>
                 </div>
 

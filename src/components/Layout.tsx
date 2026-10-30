@@ -116,7 +116,7 @@ export default function Layout() {
         <div>
           <h2 className="font-bold text-sm leading-tight text-white">Educação Espírita</h2>
           <p className="text-xs text-slate-400">
-            Centro Espírita Progressista — Infância & Juventude
+            CEP-Coligação Espírita Progressista — Infância & Juventude
           </p>
         </div>
       </div>
@@ -228,7 +228,7 @@ export default function Layout() {
               <Sparkles className="h-4 w-4" />
             </div>
             <span className="font-bold text-sm tracking-tight">
-              Centro Espírita Progressista — Educação Infantil
+              CEP-Coligação Espírita Progressista — Educação Infantil
             </span>
           </div>
 

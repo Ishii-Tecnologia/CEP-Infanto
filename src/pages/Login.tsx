@@ -76,7 +76,7 @@ export default function Login() {
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Educação Espírita Infantil</h1>
-              <p className="text-xs text-sky-200">Centro Espírita Progressista</p>
+              <p className="text-xs text-sky-200">CEP-Coligação Espírita Progressista</p>
             </div>
           </div>
 

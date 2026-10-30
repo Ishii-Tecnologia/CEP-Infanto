@@ -81,8 +81,8 @@ export default function Index() {
             Olá, {user?.name || 'Educador(a)'}!
           </h1>
           <p className="text-sm text-sky-100 mt-1 max-w-2xl">
-            Bem-vindo ao sistema de Educação Espírita do Centro Espírita Progressista. Aqui você
-            acompanha a aula do dia, chamada por sala, empréstimos e moeda DimDim.
+            Bem-vindo ao sistema de Educação Espírita da CEP-Coligação Espírita Progressista. Aqui
+            você acompanha a aula do dia, chamada por sala, empréstimos e moeda DimDim.
           </p>
         </div>
 
