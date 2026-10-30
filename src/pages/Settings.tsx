@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { settingsService } from '@/services/settings'
 import { User, UserRole } from '@/types'
+import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -22,23 +23,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Users,
-  Settings,
-  Shield,
-  KeyRound,
-  UserPlus,
-  Calendar,
-  BookOpen,
-  Coins,
-  CheckCircle2,
-  AlertTriangle,
-  Lock,
-} from 'lucide-react'
+import { KeyRound, UserPlus, Calendar, BookOpen, Coins, Trash2, AlertTriangle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 export default function SettingsPage() {
   const { toast } = useToast()
+  const { user: currentUser } = useAuth()
   const [users, setUsers] = useState<User[]>([])
   const [settings, setSettings] = useState<Record<string, any>>({})
   const [loading, setLoading] = useState(true)
@@ -61,6 +51,11 @@ export default function SettingsPage() {
   const [resetModalOpen, setResetModalOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [newPassword, setNewPassword] = useState('Skip@Pass')
+
+  // Modal de Exclusão de Operador
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [userToDelete, setUserToDelete] = useState<User | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   // Configurações editáveis
   const [rulesLibrary, setRulesLibrary] = useState({
@@ -166,6 +161,41 @@ export default function SettingsPage() {
     } catch (err: any) {
       const errMsg = err?.data?.message || err?.message || 'Falha ao atualizar registro de usuário.'
       toast({ title: 'Erro ao redefinir senha', description: errMsg, variant: 'destructive' })
+    }
+  }
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return
+    if (currentUser && userToDelete.id === currentUser.id) {
+      toast({
+        title: 'Operação não permitida',
+        description: 'Você não pode excluir a sua própria conta logada.',
+        variant: 'destructive',
+      })
+      setDeleteModalOpen(false)
+      setUserToDelete(null)
+      return
+    }
+
+    try {
+      setDeleting(true)
+      await settingsService.deleteUser(userToDelete.id)
+      toast({
+        title: 'Operador excluído com sucesso!',
+        description: `A conta de ${userToDelete.name} foi removida da plataforma CEP-Coligação Espírita Progressista.`,
+      })
+      setDeleteModalOpen(false)
+      setUserToDelete(null)
+      loadData()
+    } catch (err: any) {
+      const errMsg = err?.data?.message || err?.message || 'Falha ao excluir o operador.'
+      toast({
+        title: 'Erro ao excluir operador',
+        description: errMsg,
+        variant: 'destructive',
+      })
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -279,6 +309,7 @@ export default function SettingsPage() {
                           setResetModalOpen(true)
                         }}
                         className="h-7 text-xs text-indigo-600 hover:text-indigo-800"
+                        title="Redefinir senha"
                       >
                         <KeyRound className="h-3 w-3 mr-1" />
                         Senha
@@ -288,10 +319,28 @@ export default function SettingsPage() {
                         size="sm"
                         variant="ghost"
                         onClick={() => handleToggleUserStatus(u)}
-                        className={`h-7 text-xs ${isActive ? 'text-rose-600 hover:bg-rose-50' : 'text-emerald-600 hover:bg-emerald-50'}`}
+                        className={`h-7 text-xs ${isActive ? 'text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40' : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'}`}
+                        title={isActive ? 'Desativar operador' : 'Reativar operador'}
                       >
                         {isActive ? 'Desativar' : 'Reativar'}
                       </Button>
+
+                      {/* Botão de Excluir Operador definitivo */}
+                      {currentUser?.id !== u.id && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setUserToDelete(u)
+                            setDeleteModalOpen(true)
+                          }}
+                          className="h-7 px-2 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-700"
+                          title="Excluir operador definitivamente"
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Excluir
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </Card>
@@ -579,6 +628,73 @@ export default function SettingsPage() {
               className="bg-indigo-600 hover:bg-indigo-700 text-white"
             >
               Confirmar Nova Senha
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Confirmar Exclusão Definitiva de Operador */}
+      <Dialog
+        open={deleteModalOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteModalOpen(false)
+            setUserToDelete(null)
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-rose-600">
+              <AlertTriangle className="h-5 w-5" />
+              Excluir Operador Definitivamente
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Você está prestes a remover o operador <strong>{userToDelete?.name}</strong> (
+              {userToDelete?.email}) da plataforma institucional do{' '}
+              <strong>CEP-Coligação Espírita Progressista</strong>.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-2 space-y-2 text-xs text-slate-700 dark:text-slate-300">
+            <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 space-y-1.5">
+              <p className="font-semibold text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                Esta ação é irreversível e definitiva.
+              </p>
+              <ul className="list-disc list-inside text-rose-700 dark:text-rose-400 space-y-1 text-[11px]">
+                <li>O login e o acesso deste operador serão permanentemente revogados.</li>
+                <li>
+                  Os registros históricos (presenças, planos de aula, empréstimos e lançamentos de
+                  DimDim) permanecerão intactos no banco de dados.
+                </li>
+              </ul>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Deseja realmente confirmar a exclusão deste operador?
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setDeleteModalOpen(false)
+                setUserToDelete(null)
+              }}
+              disabled={deleting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handleDeleteUser}
+              disabled={deleting}
+              className="bg-rose-600 hover:bg-rose-700 text-white"
+            >
+              {deleting ? 'Excluindo...' : 'Sim, Excluir Operador'}
             </Button>
           </DialogFooter>
         </DialogContent>

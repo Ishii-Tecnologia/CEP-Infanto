@@ -66,6 +66,10 @@ export const settingsService = {
     return pb.collection('users').update<User>(id, data)
   },
 
+  async deleteUser(id: string): Promise<boolean> {
+    return pb.collection('users').delete(id)
+  },
+
   async resetUserPassword(id: string, newPass = 'Skip@Pass'): Promise<void> {
     try {
       // Tenta via endpoint do backend dedicado para redefinição por admin/dirigente
