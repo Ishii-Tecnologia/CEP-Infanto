@@ -39,6 +39,7 @@ import { ChangePasswordDialog } from '@/components/ChangePasswordDialog'
 import { useAcademic, SchoolYearConfig, RecessSaturday } from '@/contexts/AcademicContext'
 import { formatDate } from '@/lib/academic'
 import { syncOrRegenerateCalendar } from '@/services/calendarGenerator'
+import { DatePickerBR } from '@/components/DatePickerBR'
 import { Plus, X, Sliders, RefreshCw } from 'lucide-react'
 
 export default function SettingsPage() {
@@ -828,10 +829,9 @@ export default function SettingsPage() {
                         </span>
                       )}
                     </div>
-                    <Input
-                      type="date"
+                    <DatePickerBR
                       value={yearForm.startDate}
-                      onChange={(e) => setYearForm({ ...yearForm, startDate: e.target.value })}
+                      onChange={(val) => setYearForm({ ...yearForm, startDate: val })}
                     />
                   </div>
 
@@ -846,10 +846,9 @@ export default function SettingsPage() {
                         </span>
                       )}
                     </div>
-                    <Input
-                      type="date"
+                    <DatePickerBR
                       value={yearForm.endDate || ''}
-                      onChange={(e) => setYearForm({ ...yearForm, endDate: e.target.value })}
+                      onChange={(val) => setYearForm({ ...yearForm, endDate: val })}
                     />
                   </div>
 
@@ -864,12 +863,9 @@ export default function SettingsPage() {
                         </span>
                       )}
                     </div>
-                    <Input
-                      type="date"
+                    <DatePickerBR
                       value={yearForm.winterBreakStart || ''}
-                      onChange={(e) =>
-                        setYearForm({ ...yearForm, winterBreakStart: e.target.value })
-                      }
+                      onChange={(val) => setYearForm({ ...yearForm, winterBreakStart: val })}
                     />
                   </div>
 
@@ -882,10 +878,9 @@ export default function SettingsPage() {
                         </span>
                       )}
                     </div>
-                    <Input
-                      type="date"
+                    <DatePickerBR
                       value={yearForm.winterBreakEnd || ''}
-                      onChange={(e) => setYearForm({ ...yearForm, winterBreakEnd: e.target.value })}
+                      onChange={(val) => setYearForm({ ...yearForm, winterBreakEnd: val })}
                     />
                   </div>
 
@@ -898,10 +893,9 @@ export default function SettingsPage() {
                         </span>
                       )}
                     </div>
-                    <Input
-                      type="date"
+                    <DatePickerBR
                       value={yearForm.christmasDate || ''}
-                      onChange={(e) => setYearForm({ ...yearForm, christmasDate: e.target.value })}
+                      onChange={(val) => setYearForm({ ...yearForm, christmasDate: val })}
                     />
                   </div>
                 </div>
@@ -955,10 +949,9 @@ export default function SettingsPage() {
                           </span>
                         )}
                       </div>
-                      <Input
-                        type="date"
+                      <DatePickerBR
                         value={newRecessDate}
-                        onChange={(e) => setNewRecessDate(e.target.value)}
+                        onChange={(val) => setNewRecessDate(val)}
                       />
                     </div>
                     <div className="sm:col-span-6 space-y-1">
