@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { AcademicProvider } from './contexts/AcademicContext'
 
 import Layout from './components/Layout'
+import RoleRoute from './components/RoleRoute'
 import Index from './pages/Index'
 import Login from './pages/Login'
 import FamiliesPage from './pages/Families'
@@ -28,14 +29,92 @@ const App = () => (
             <Route path="/login" element={<Login />} />
 
             <Route element={<Layout />}>
+              {/* Painel: todos os papéis autenticados */}
               <Route path="/" element={<Index />} />
-              <Route path="/familias" element={<FamiliesPage />} />
-              <Route path="/calendario" element={<CalendarPage />} />
-              <Route path="/presenca" element={<AttendancePage />} />
-              <Route path="/relatorios" element={<AttendanceReportsPage />} />
-              <Route path="/biblioteca" element={<LibraryPage />} />
-              <Route path="/dimdim" element={<DimDimPage />} />
-              <Route path="/configuracoes" element={<SettingsPage />} />
+
+              {/* Famílias & Crianças: Admin, Dirigente, Professor, Auxiliar */}
+              <Route
+                element={
+                  <RoleRoute
+                    allowedRoles={['admin', 'dirigente', 'professor', 'auxiliar']}
+                    rolesDescription="Admin, Dirigente, Professor, Auxiliar"
+                  />
+                }
+              >
+                <Route path="/familias" element={<FamiliesPage />} />
+              </Route>
+
+              {/* Calendário & Planos: Admin, Dirigente, Professor, Auxiliar */}
+              <Route
+                element={
+                  <RoleRoute
+                    allowedRoles={['admin', 'dirigente', 'professor', 'auxiliar']}
+                    rolesDescription="Admin, Dirigente, Professor, Auxiliar"
+                  />
+                }
+              >
+                <Route path="/calendario" element={<CalendarPage />} />
+              </Route>
+
+              {/* Chamada / Presença: Admin, Dirigente, Professor, Auxiliar */}
+              <Route
+                element={
+                  <RoleRoute
+                    allowedRoles={['admin', 'dirigente', 'professor', 'auxiliar']}
+                    rolesDescription="Admin, Dirigente, Professor, Auxiliar"
+                  />
+                }
+              >
+                <Route path="/presenca" element={<AttendancePage />} />
+              </Route>
+
+              {/* Relatórios de Frequência: Admin, Dirigente, Professor */}
+              <Route
+                element={
+                  <RoleRoute
+                    allowedRoles={['admin', 'dirigente', 'professor']}
+                    rolesDescription="Admin, Dirigente, Professor"
+                  />
+                }
+              >
+                <Route path="/relatorios" element={<AttendanceReportsPage />} />
+              </Route>
+
+              {/* Biblioteca Infantil: Admin, Dirigente, Bibliotecário, Professor */}
+              <Route
+                element={
+                  <RoleRoute
+                    allowedRoles={['admin', 'dirigente', 'bibliotecario', 'professor']}
+                    rolesDescription="Admin, Dirigente, Bibliotecário, Professor"
+                  />
+                }
+              >
+                <Route path="/biblioteca" element={<LibraryPage />} />
+              </Route>
+
+              {/* Moeda DimDim: Admin, Dirigente, Professor, Auxiliar */}
+              <Route
+                element={
+                  <RoleRoute
+                    allowedRoles={['admin', 'dirigente', 'professor', 'auxiliar']}
+                    rolesDescription="Admin, Dirigente, Professor, Auxiliar"
+                  />
+                }
+              >
+                <Route path="/dimdim" element={<DimDimPage />} />
+              </Route>
+
+              {/* Configurações e Operadores: Apenas Admin e Dirigente */}
+              <Route
+                element={
+                  <RoleRoute
+                    allowedRoles={['admin', 'dirigente']}
+                    rolesDescription="Admin, Dirigente"
+                  />
+                }
+              >
+                <Route path="/configuracoes" element={<SettingsPage />} />
+              </Route>
             </Route>
 
             <Route path="*" element={<NotFound />} />

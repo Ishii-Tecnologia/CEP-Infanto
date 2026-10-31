@@ -19,7 +19,7 @@ import { settingsService } from '@/services/settings'
 export default function Login() {
   const navigate = useNavigate()
   const { login } = useAuth()
-  const [email, setEmail] = useState('ishii7883@gmail.com')
+  const [email, setEmail] = useState('admin@cep.org.br')
   const [password, setPassword] = useState('Skip@Pass')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -59,7 +59,7 @@ export default function Login() {
   }
 
   const quickLogins = [
-    { label: 'Administrador', email: 'ishii7883@gmail.com', role: 'admin' },
+    { label: 'Administrador', email: 'admin@cep.org.br', role: 'admin' },
     { label: 'Dirigente', email: 'dirigente@cep.org.br', role: 'dirigente' },
     { label: 'Professor(a)', email: 'prof.claudia@cep.org.br', role: 'professor' },
     { label: 'Bibliotecário(a)', email: 'biblio.teresa@cep.org.br', role: 'bibliotecario' },

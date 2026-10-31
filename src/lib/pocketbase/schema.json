@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-30T22:41:31.664Z",
+  "generatedAt": "2026-10-31T01:35:58.792Z",
   "collections": [
     {
       "name": "users",
@@ -7,9 +7,9 @@
       "apiRules": {
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
-        "create": "",
-        "update": "@request.auth.id != '' && (id = @request.auth.id || @request.auth.role = 'admin' || @request.auth.role = 'dirigente')",
-        "delete": "@request.auth.id != '' && (id = @request.auth.id || @request.auth.role = 'admin' || @request.auth.role = 'dirigente')"
+        "create": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente')",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'admin' || (@request.auth.role = 'dirigente' && @request.body.role != 'admin') || (id = @request.auth.id && @request.body.role:changed = false))",
+        "delete": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente')"
       },
       "fields": [
         {
@@ -63,9 +63,9 @@
       "apiRules": {
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "create": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente')",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente')",
+        "delete": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente')"
       },
       "fields": [
         {
@@ -109,9 +109,9 @@
       "apiRules": {
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "create": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')",
+        "delete": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')"
       },
       "fields": [
         {
@@ -167,9 +167,9 @@
       "apiRules": {
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "create": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')",
+        "delete": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')"
       },
       "fields": [
         {
@@ -238,9 +238,9 @@
       "apiRules": {
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "create": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')",
+        "delete": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')"
       },
       "fields": [
         {
@@ -331,9 +331,9 @@
       "apiRules": {
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "create": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')",
+        "delete": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')"
       },
       "fields": [
         {
@@ -411,9 +411,9 @@
       "apiRules": {
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "create": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')",
+        "delete": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')"
       },
       "fields": [
         {
@@ -485,9 +485,9 @@
       "apiRules": {
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "create": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')",
+        "delete": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')"
       },
       "fields": [
         {
@@ -555,9 +555,9 @@
       "apiRules": {
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "create": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'bibliotecario' || @request.auth.role = 'professor')",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'bibliotecario' || @request.auth.role = 'professor')",
+        "delete": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'bibliotecario' || @request.auth.role = 'professor')"
       },
       "fields": [
         {
@@ -625,9 +625,9 @@
       "apiRules": {
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "create": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'bibliotecario' || @request.auth.role = 'professor')",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'bibliotecario' || @request.auth.role = 'professor')",
+        "delete": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'bibliotecario' || @request.auth.role = 'professor')"
       },
       "fields": [
         {
@@ -689,9 +689,9 @@
       "apiRules": {
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "create": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'bibliotecario' || @request.auth.role = 'professor')",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'bibliotecario' || @request.auth.role = 'professor')",
+        "delete": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'bibliotecario' || @request.auth.role = 'professor')"
       },
       "fields": [
         {
@@ -765,9 +765,9 @@
       "apiRules": {
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "create": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')",
+        "delete": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'dirigente' || @request.auth.role = 'professor' || @request.auth.role = 'auxiliar')"
       },
       "fields": [
         {
