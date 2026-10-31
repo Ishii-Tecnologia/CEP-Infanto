@@ -2,9 +2,10 @@ import pb from '@/lib/pocketbase/client'
 import { Lesson, LessonPlan, Attendance, ClassroomId, AttendanceStatus } from '@/types'
 
 export const lessonService = {
-  async getAll(year = 2027): Promise<Lesson[]> {
+  async getAll(year?: number): Promise<Lesson[]> {
+    const filter = year ? `year = ${year}` : ''
     const lessons = await pb.collection('lessons').getFullList<Lesson>({
-      filter: `year = ${year}`,
+      filter,
       sort: 'date',
     })
 

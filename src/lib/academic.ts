@@ -6,7 +6,7 @@ import { ClassroomId, ClassroomInfo, CLASSROOMS } from '@/types'
  */
 export function calculateAgeOnCutoffDate(
   birthDateStr: string,
-  cutoffYear = 2027,
+  cutoffYear?: number,
   cutoffMonth = 2,
   cutoffDay = 1,
 ): number {
@@ -14,7 +14,8 @@ export function calculateAgeOnCutoffDate(
   const birth = new Date(birthDateStr)
   if (isNaN(birth.getTime())) return 0
 
-  let age = cutoffYear - birth.getFullYear()
+  const yearToUse = cutoffYear ?? new Date().getFullYear()
+  let age = yearToUse - birth.getFullYear()
   const birthMonth = birth.getMonth() // 0-indexed (2 = março)
   const birthDay = birth.getDate()
 
@@ -57,12 +58,13 @@ export function classifyClassroomByAge(
  */
 export function classifyClassroomByBirthDate(
   birthDateStr: string,
-  referenceYear = 2027,
+  referenceYear?: number,
   customClassrooms: ClassroomInfo[] = CLASSROOMS,
   cutoffMonth = 2,
   cutoffDay = 1,
 ): ClassroomId {
-  const age = calculateAgeOnCutoffDate(birthDateStr, referenceYear, cutoffMonth, cutoffDay)
+  const yearToUse = referenceYear ?? new Date().getFullYear()
+  const age = calculateAgeOnCutoffDate(birthDateStr, yearToUse, cutoffMonth, cutoffDay)
   return classifyClassroomByAge(age, customClassrooms)
 }
 

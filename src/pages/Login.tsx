@@ -15,10 +15,12 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { BookOpen, Heart, CheckCircle2 } from 'lucide-react'
 import { settingsService } from '@/services/settings'
+import { useAcademic } from '@/contexts/AcademicContext'
 
 export default function Login() {
   const navigate = useNavigate()
   const { login } = useAuth()
+  const { schoolYear, loading: academicLoading } = useAcademic()
   const [email, setEmail] = useState('admin@cep.org.br')
   const [password, setPassword] = useState('Skip@Pass')
   const [isLoading, setIsLoading] = useState(false)
@@ -98,7 +100,7 @@ export default function Login() {
         </div>
 
         <div className="mt-12 pt-6 border-t border-white/10 text-xs text-sky-200/60 flex items-center justify-between">
-          <span>Ano Letivo 2027</span>
+          <span>{academicLoading ? 'Ano Letivo' : `Ano Letivo ${schoolYear.year}`}</span>
           <span className="flex items-center gap-1">
             <Heart className="h-3 w-3 text-rose-400" /> Amor & Educação
           </span>

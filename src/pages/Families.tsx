@@ -51,7 +51,13 @@ import { ImageCaptureInput } from '@/components/ImageCaptureInput'
 
 export default function FamiliesPage() {
   const { toast } = useToast()
-  const { classrooms, schoolYear, classifyChild, calculateAge } = useAcademic()
+  const {
+    classrooms,
+    schoolYear,
+    loading: academicLoading,
+    classifyChild,
+    calculateAge,
+  } = useAcademic()
   const [families, setFamilies] = useState<Family[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -628,7 +634,7 @@ export default function FamiliesPage() {
                                 </p>
                                 <p className="text-muted-foreground text-[11px]">
                                   Nasc: {formatDate(c.birth_date)} ({age} anos em 01/03/
-                                  {schoolYear.year || 2027})
+                                  {academicLoading ? '...' : schoolYear.year})
                                 </p>
                               </div>
                             </div>
@@ -936,8 +942,8 @@ export default function FamiliesPage() {
               <div className="space-y-4">
                 <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 p-2.5 rounded-lg text-xs text-amber-900 dark:text-amber-200">
                   <strong>Classificação Automática:</strong> A sala é calculada imediatamente a
-                  partir da idade completa em 1º de março do ano letivo ({schoolYear.year || 2027})
-                  e das faixas configuradas.
+                  partir da idade completa em 1º de março do ano letivo (
+                  {academicLoading ? '...' : schoolYear.year}) e das faixas configuradas.
                 </div>
 
                 {wizardChildren.map((child, index) => {

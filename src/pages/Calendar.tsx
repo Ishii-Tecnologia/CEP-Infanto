@@ -35,7 +35,7 @@ import { useToast } from '@/hooks/use-toast'
 
 export default function CalendarPage() {
   const { toast } = useToast()
-  const { classrooms, saveClassrooms, schoolYear } = useAcademic()
+  const { classrooms, saveClassrooms, schoolYear, loading: academicLoading } = useAcademic()
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null)
@@ -70,13 +70,15 @@ export default function CalendarPage() {
   }, [classrooms])
 
   useEffect(() => {
-    loadLessons()
-  }, [schoolYear.year])
+    if (!academicLoading) {
+      loadLessons()
+    }
+  }, [schoolYear.year, academicLoading])
 
   const loadLessons = async () => {
     try {
       setLoading(true)
-      const data = await lessonService.getAll(schoolYear.year || 2027)
+      const data = await lessonService.getAll(schoolYear.year)
       setLessons(data)
       if (data.length > 0) {
         setSelectedLesson((prev) => {
@@ -246,7 +248,9 @@ export default function CalendarPage() {
             Calendário e Matriz Pedagógica
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-            30 Sábados letivos de 2027 (março a novembro), excluindo feriados e com planos por sala.
+            {academicLoading
+              ? 'Sábados letivos do ano, excluindo feriados e com planos por sala.'
+              : `${lessons.length > 0 ? `${lessons.length} Sábados` : 'Sábados'} letivos de ${schoolYear.year}, excluindo feriados e com planos por sala.`}
           </p>
         </div>
 
@@ -265,7 +269,7 @@ export default function CalendarPage() {
             variant="outline"
             className="bg-indigo-50 text-indigo-700 border-indigo-200 text-xs py-1.5 px-3"
           >
-            Ano Letivo {schoolYear.year || 2027} • {lessons.length} Sábados
+            Ano Letivo {academicLoading ? '...' : schoolYear.year} • {lessons.length} Sábados
           </Badge>
         </div>
       </div>

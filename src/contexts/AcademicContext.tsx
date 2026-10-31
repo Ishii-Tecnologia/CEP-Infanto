@@ -35,28 +35,19 @@ interface AcademicContextType {
   calculateAge: (birthDateStr: string) => number
 }
 
+const CURRENT_YEAR = new Date().getFullYear()
+
 const DEFAULT_SCHOOL_YEAR: SchoolYearConfig = {
-  year: 2027,
-  startDate: '2027-03-06',
-  endDate: '2027-11-27',
-  ageBaseDate: '2027-03-01',
-  winterBreakStart: '2027-07-04',
-  winterBreakEnd: '2027-07-18',
-  christmasDate: '2027-12-04',
+  year: CURRENT_YEAR,
+  startDate: `${CURRENT_YEAR}-03-06`,
+  endDate: `${CURRENT_YEAR}-11-27`,
+  ageBaseDate: `${CURRENT_YEAR}-03-01`,
+  winterBreakStart: `${CURRENT_YEAR}-07-04`,
+  winterBreakEnd: `${CURRENT_YEAR}-07-18`,
+  christmasDate: `${CURRENT_YEAR}-12-04`,
 }
 
-const DEFAULT_RECESS_SATURDAYS: RecessSaturday[] = [
-  { date: '2027-03-27', name: 'Sábado de Páscoa (Páscoa 28/03)' },
-  { date: '2027-04-17', name: 'Sábado emenda de Tiradentes (21/04)' },
-  { date: '2027-05-01', name: 'Dia do Trabalho' },
-  { date: '2027-05-29', name: 'Sábado emenda de Corpus Christi (27/05)' },
-  { date: '2027-07-10', name: 'Férias de Julho - Semana 1' },
-  { date: '2027-07-17', name: 'Férias de Julho - Semana 2' },
-  { date: '2027-09-04', name: 'Sábado emenda da Independência (07/09)' },
-  { date: '2027-10-09', name: 'Sábado emenda N. Sra. Aparecida (12/10)' },
-  { date: '2027-10-30', name: 'Sábado emenda Finados (02/11)' },
-  { date: '2027-11-13', name: 'Sábado emenda Proclamação da República (15/11)' },
-]
+const DEFAULT_RECESS_SATURDAYS: RecessSaturday[] = []
 
 const AcademicContext = createContext<AcademicContextType>({
   classrooms: CLASSROOMS,
@@ -92,21 +83,23 @@ export const AcademicProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // 2. Ano Letivo
       if (data.school_year && typeof data.school_year === 'object') {
         const sy = data.school_year
+        const syYear = sy.year || DEFAULT_SCHOOL_YEAR.year
         setSchoolYear({
-          year: sy.year || DEFAULT_SCHOOL_YEAR.year,
+          year: syYear,
           startDate: sy.startDate || DEFAULT_SCHOOL_YEAR.startDate,
           endDate: sy.endDate || DEFAULT_SCHOOL_YEAR.endDate,
-          ageBaseDate: sy.ageBaseDate || `${sy.year || 2027}-03-01`,
-          winterBreakStart: sy.winterBreakStart || `${sy.year || 2027}-07-04`,
-          winterBreakEnd: sy.winterBreakEnd || `${sy.year || 2027}-07-18`,
-          christmasDate: sy.christmasDate || `${sy.year || 2027}-12-04`,
+          ageBaseDate: sy.ageBaseDate || `${syYear}-03-01`,
+          winterBreakStart: sy.winterBreakStart || `${syYear}-07-04`,
+          winterBreakEnd: sy.winterBreakEnd || `${syYear}-07-18`,
+          christmasDate: sy.christmasDate || `${syYear}-12-04`,
         })
       }
 
       // 3. Feriados e Recessos
-      const curYear = data.school_year?.year || 2027
+      const curYear = data.school_year?.year || DEFAULT_SCHOOL_YEAR.year
       const holidaysKey = `holidays_${curYear}`
-      const holidaysList = data[holidaysKey] || data.holidays_2027 || data.recess_saturdays
+      const holidaysList =
+        data[holidaysKey] || data.holidays_2026 || data.holidays_2027 || data.recess_saturdays
       if (Array.isArray(holidaysList)) {
         setRecessSaturdays(holidaysList)
       }
@@ -165,9 +158,14 @@ export const AcademicProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const calculateAge = useCallback(
     (birthDateStr: string): number => {
       if (!birthDateStr) return 0
-      const baseDate = schoolYear.ageBaseDate || `${schoolYear.year || 2027}-03-01`
+      const baseDate = schoolYear.ageBaseDate || `${schoolYear.year || CURRENT_YEAR}-03-01`
       const [y, m, d] = baseDate.split('-').map(Number)
-      return calculateAgeOnCutoffDate(birthDateStr, y || 2027, (m || 3) - 1, d || 1)
+      return calculateAgeOnCutoffDate(
+        birthDateStr,
+        y || schoolYear.year || CURRENT_YEAR,
+        (m || 3) - 1,
+        d || 1,
+      )
     },
     [schoolYear],
   )

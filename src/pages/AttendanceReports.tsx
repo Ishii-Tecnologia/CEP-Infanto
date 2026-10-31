@@ -69,15 +69,26 @@ const MONTH_NAMES = [
 
 export default function AttendanceReportsPage() {
   const { toast } = useToast()
-  const { classrooms, schoolYear } = useAcademic()
+  const { classrooms, schoolYear, loading: academicLoading } = useAcademic()
   const { user } = useAuth()
 
   // Filtros principais
   const [selectedClassroom, setSelectedClassroom] = useState<ClassroomId | 'ALL'>('ALL')
   const [periodType, setPeriodType] = useState<'all' | 'month' | 'custom'>('all')
   const [selectedMonth, setSelectedMonth] = useState<number>(3) // Padrão Março
-  const [startDate, setStartDate] = useState<string>('2027-03-01')
-  const [endDate, setEndDate] = useState<string>('2027-04-30')
+  const [startDate, setStartDate] = useState<string>(
+    () => `${schoolYear.year || new Date().getFullYear()}-03-01`,
+  )
+  const [endDate, setEndDate] = useState<string>(
+    () => `${schoolYear.year || new Date().getFullYear()}-04-30`,
+  )
+
+  useEffect(() => {
+    if (schoolYear.year) {
+      setStartDate(`${schoolYear.year}-03-01`)
+      setEndDate(`${schoolYear.year}-04-30`)
+    }
+  }, [schoolYear.year])
 
   // Filtros locais na tabela
   const [searchQuery, setSearchQuery] = useState<string>('')
@@ -100,8 +111,9 @@ export default function AttendanceReportsPage() {
   // Carrega dados do servidor
   const fetchData = async () => {
     try {
+      if (!schoolYear.year) return
       setLoading(true)
-      const data = await attendanceReportService.loadReportData(schoolYear.year || 2027)
+      const data = await attendanceReportService.loadReportData(schoolYear.year)
       setRawData(data)
     } catch (err: any) {
       console.error('Erro ao carregar dados do relatório:', err)
@@ -116,8 +128,10 @@ export default function AttendanceReportsPage() {
   }
 
   useEffect(() => {
-    fetchData()
-  }, [schoolYear.year])
+    if (!academicLoading) {
+      fetchData()
+    }
+  }, [schoolYear.year, academicLoading])
 
   // Monta filtro consolidado
   const filter: AttendanceReportFilter = useMemo(() => {
@@ -125,7 +139,7 @@ export default function AttendanceReportsPage() {
       classroomId: selectedClassroom,
       periodType,
       month: periodType === 'month' ? selectedMonth : undefined,
-      year: schoolYear.year || 2027,
+      year: schoolYear.year,
       startDate: periodType === 'custom' ? startDate : undefined,
       endDate: periodType === 'custom' ? endDate : undefined,
     }
@@ -160,17 +174,17 @@ export default function AttendanceReportsPage() {
   // Texto legível do período para cabeçalho e impressão
   const periodLabel = useMemo(() => {
     if (periodType === 'all') {
-      return `Ano Letivo ${schoolYear.year || 2027} (Completo)`
+      return `Ano Letivo ${academicLoading ? '...' : schoolYear.year} (Completo)`
     }
     if (periodType === 'month') {
       const m = MONTH_NAMES.find((item) => item.value === selectedMonth)
-      return `${m ? m.label : 'Mês'} de ${schoolYear.year || 2027}`
+      return `${m ? m.label : 'Mês'} de ${academicLoading ? '...' : schoolYear.year}`
     }
     if (periodType === 'custom') {
       return `Período de ${formatDate(startDate)} até ${formatDate(endDate)}`
     }
     return 'Geral'
-  }, [periodType, selectedMonth, startDate, endDate, schoolYear.year])
+  }, [periodType, selectedMonth, startDate, endDate, schoolYear.year, academicLoading])
 
   const classroomLabel = useMemo(() => {
     if (selectedClassroom === 'ALL') return 'Todas as Salas (A, B, C e D)'
@@ -317,7 +331,7 @@ export default function AttendanceReportsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all" className="text-xs">
-                  Ano Completo ({schoolYear.year || 2027})
+                  Ano Completo ({academicLoading ? '...' : schoolYear.year})
                 </SelectItem>
                 <SelectItem value="month" className="text-xs">
                   Mês Específico
@@ -345,7 +359,7 @@ export default function AttendanceReportsPage() {
                 <SelectContent>
                   {MONTH_NAMES.map((m) => (
                     <SelectItem key={m.value} value={String(m.value)} className="text-xs">
-                      {m.label} de {schoolYear.year || 2027}
+                      {m.label} de {academicLoading ? '...' : schoolYear.year}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -403,7 +417,7 @@ export default function AttendanceReportsPage() {
               </Label>
               <div className="h-9 px-3 rounded-md border bg-slate-50 dark:bg-slate-900 flex items-center text-xs text-muted-foreground">
                 <CalendarDays className="h-3.5 w-3.5 mr-1.5 text-sky-600" />
-                Ano Letivo {schoolYear.year || 2027}
+                Ano Letivo {academicLoading ? '...' : schoolYear.year}
               </div>
             </div>
           )}

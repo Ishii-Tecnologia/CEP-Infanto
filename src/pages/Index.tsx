@@ -27,7 +27,7 @@ import {
 export default function Index() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { classrooms, schoolYear } = useAcademic()
+  const { classrooms, schoolYear, loading: academicLoading } = useAcademic()
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [overdueLoans, setOverdueLoans] = useState<BookLoan[]>([])
   const [families, setFamilies] = useState<Family[]>([])
@@ -35,14 +35,16 @@ export default function Index() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadDashboardData()
-  }, [])
+    if (!academicLoading) {
+      loadDashboardData()
+    }
+  }, [schoolYear.year, academicLoading])
 
   const loadDashboardData = async () => {
     try {
       setLoading(true)
       const [allLessons, allLoans, allFamilies] = await Promise.all([
-        lessonService.getAll(schoolYear.year || 2027),
+        lessonService.getAll(schoolYear.year),
         libraryService.getAllLoans(),
         familyService.getAll(),
       ])
@@ -77,7 +79,9 @@ export default function Index() {
         <div>
           <div className="flex items-center gap-2 text-amber-300 text-xs font-semibold uppercase tracking-wider mb-1">
             <Sparkles className="h-4 w-4" />
-            Ano Letivo 2027 • Evangelização Infantil
+            {academicLoading
+              ? 'Evangelização Infantil'
+              : `Ano Letivo ${schoolYear.year} • Evangelização Infantil`}
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
             Olá, {user?.name || 'Educador(a)'}!
@@ -134,8 +138,7 @@ export default function Index() {
           <CardContent>
             <div className="text-2xl font-bold">{lessons.length}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {lessons.filter((l) => l.status === 'scheduled').length} aulas agendadas (março a
-              novembro)
+              {lessons.filter((l) => l.status === 'scheduled').length} aulas agendadas no ano letivo
             </p>
           </CardContent>
         </Card>
@@ -380,7 +383,7 @@ export default function Index() {
                 <p className="font-semibold text-slate-800 dark:text-slate-200">
                   Classificação por Idade:
                 </p>
-                <p>Corte em 1º de março de {schoolYear.year || 2027}:</p>
+                <p>Corte em 1º de março de {academicLoading ? '...' : schoolYear.year}:</p>
                 <ul className="list-disc list-inside mt-1 space-y-0.5 text-[11px]">
                   {classrooms.map((c) => (
                     <li key={c.id}>

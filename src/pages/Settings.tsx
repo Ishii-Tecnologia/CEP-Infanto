@@ -47,7 +47,7 @@ export default function SettingsPage() {
   const { user: currentUser } = useAuth()
   const {
     classrooms,
-    schoolYear: academicYear,
+    schoolYear,
     recessSaturdays: academicRecesses,
     saveClassrooms,
     saveSchoolYearAndRecesses,
@@ -98,7 +98,7 @@ export default function SettingsPage() {
   })
 
   // Edição de Ano Letivo e Feriados
-  const [yearForm, setYearForm] = useState<SchoolYearConfig>(academicYear)
+  const [yearForm, setYearForm] = useState<SchoolYearConfig>(schoolYear)
   const [recessList, setRecessList] = useState<RecessSaturday[]>(academicRecesses)
   const [newRecessDate, setNewRecessDate] = useState('')
   const [newRecessName, setNewRecessName] = useState('')
@@ -110,8 +110,8 @@ export default function SettingsPage() {
   const [savingRooms, setSavingRooms] = useState(false)
 
   useEffect(() => {
-    setYearForm(academicYear)
-  }, [academicYear])
+    setYearForm(schoolYear)
+  }, [schoolYear])
 
   useEffect(() => {
     setRecessList(academicRecesses)
@@ -281,7 +281,7 @@ export default function SettingsPage() {
       setSavingYear(true)
       // Normaliza o ano com base na data de início, se fornecida
       const cleanStartDate = yearForm.startDate ? yearForm.startDate.trim() : ''
-      let derivedYear = yearForm.year || 2027
+      let derivedYear = yearForm.year || schoolYear.year || new Date().getFullYear()
       if (cleanStartDate) {
         const parts = cleanStartDate.split('T')[0].split(' ')[0]
         if (parts.includes('-')) {
@@ -361,7 +361,7 @@ export default function SettingsPage() {
 
       // Normaliza o ano com base na data de início
       const cleanStartDate = yearForm.startDate.trim()
-      let derivedYear = yearForm.year || 2027
+      let derivedYear = yearForm.year || schoolYear.year || new Date().getFullYear()
       if (cleanStartDate) {
         const parts = cleanStartDate.split('T')[0].split(' ')[0]
         if (parts.includes('-')) {
@@ -470,8 +470,8 @@ export default function SettingsPage() {
             Operadores e Configurações
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-            Gestão de contas de acesso, papéis de permissão, ano letivo 2027, feriados e regras do
-            sistema.
+            Gestão de contas de acesso, papéis de permissão, ano letivo{' '}
+            {yearForm.year || schoolYear.year}, feriados e regras do sistema.
           </p>
         </div>
 
@@ -857,12 +857,12 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-            {/* Ano Letivo 2027 e Janelas de Feriados - EDITÁVEL */}
+            {/* Ano Letivo e Janelas de Feriados - EDITÁVEL */}
             <Card className="md:col-span-2">
               <CardHeader>
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-indigo-600" />
-                  Ano Letivo {yearForm.year || 2027} e Janelas de Feriados
+                  Ano Letivo {yearForm.year || schoolYear.year} e Janelas de Feriados
                 </CardTitle>
                 <CardDescription className="text-xs">
                   Configuração aberta: defina o ano, a data de início, as datas do recesso de meio
@@ -878,13 +878,14 @@ export default function SettingsPage() {
                     <Input
                       type="number"
                       value={yearForm.year}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const parsed = parseInt(e.target.value, 10) || new Date().getFullYear()
                         setYearForm({
                           ...yearForm,
-                          year: parseInt(e.target.value, 10) || 2027,
-                          ageBaseDate: `${parseInt(e.target.value, 10) || 2027}-03-01`,
+                          year: parsed,
+                          ageBaseDate: `${parsed}-03-01`,
                         })
-                      }
+                      }}
                     />
                   </div>
 

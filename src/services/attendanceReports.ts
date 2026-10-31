@@ -71,14 +71,15 @@ export const attendanceReportService = {
    * Carrega os dados brutos necessários para relatórios:
    * Aulas, Crianças ativas e Chamadas registradas.
    */
-  async loadReportData(year = 2027): Promise<{
+  async loadReportData(year?: number): Promise<{
     lessons: Lesson[]
     children: Child[]
     attendances: Attendance[]
   }> {
+    const filter = year ? `year = ${year}` : ''
     const [lessons, children, attendances] = await Promise.all([
       pb.collection('lessons').getFullList<Lesson>({
-        filter: `year = ${year}`,
+        filter,
         sort: 'date',
       }),
       pb.collection('children').getFullList<Child>({

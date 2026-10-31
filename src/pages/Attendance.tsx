@@ -32,7 +32,7 @@ import { useToast } from '@/hooks/use-toast'
 
 export default function AttendancePage() {
   const { toast } = useToast()
-  const { classrooms, schoolYear } = useAcademic()
+  const { classrooms, schoolYear, loading: academicLoading } = useAcademic()
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [selectedLessonId, setSelectedLessonId] = useState<string>('')
   const [selectedClassroom, setSelectedClassroom] = useState<ClassroomId>('A')
@@ -44,13 +44,15 @@ export default function AttendancePage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    loadLessons()
-  }, [])
+    if (!academicLoading) {
+      loadLessons()
+    }
+  }, [schoolYear.year, academicLoading])
 
   const loadLessons = async () => {
     try {
       setLoading(true)
-      const data = await lessonService.getAll(schoolYear.year || 2027)
+      const data = await lessonService.getAll(schoolYear.year)
       setLessons(data)
 
       const active = data.find((l) => l.status === 'scheduled')

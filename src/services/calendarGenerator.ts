@@ -189,7 +189,7 @@ export async function syncOrRegenerateCalendar(
 
   // Extrai o ano a partir da data de início normalizada para garantir coerência estrita
   const parsedStartYear = parseInt(startDate.split('-')[0], 10)
-  const year = config.year || parsedStartYear || 2027
+  const year = config.year || parsedStartYear || new Date().getFullYear()
 
   // Garante que feriados de recessos de meio de ano estejam inclusos na lista
   const normalizedRecesses: RecessSaturday[] = [...(recesses || [])]
