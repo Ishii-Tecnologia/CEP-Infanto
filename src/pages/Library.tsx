@@ -63,7 +63,13 @@ export default function LibraryPage() {
     initialCopies: 1,
   })
 
-  // Modal de Edição de Exemplar (tombo, estado, status e notas)
+  // Regras da Biblioteca (carregadas das configurações do sistema)
+  const [libraryRules, setLibraryRules] = useState({
+    maxLoansPerChild: 2,
+    loanDurationDays: 7,
+  })
+
+  // Modal de Edição de Exemplar (código, estado, status e notas)
   const [copyEditOpen, setCopyEditOpen] = useState(false)
   const [editingCopy, setEditingCopy] = useState<BookCopy | null>(null)
   const [copyForm, setCopyForm] = useState({
@@ -73,6 +79,12 @@ export default function LibraryPage() {
     notes: '',
   })
   const [savingCopy, setSavingCopy] = useState(false)
+
+  // Modal de Adição de Novo Exemplar para livro existente
+  const [addCopyOpen, setAddCopyOpen] = useState(false)
+  const [bookForNewCopy, setBookForNewCopy] = useState<Book | null>(null)
+  const [newCopyCode, setNewCopyCode] = useState('')
+  const [addingCopy, setAddingCopy] = useState(false)
 
   // Modal de Novo Empréstimo
   const [loanOpen, setLoanOpen] = useState(false)
@@ -86,15 +98,17 @@ export default function LibraryPage() {
   const loadLibraryData = async () => {
     try {
       setLoading(true)
-      const [allBooks, allLoans, allChildren] = await Promise.all([
+      const [allBooks, allLoans, allChildren, rules] = await Promise.all([
         libraryService.getAllBooks(),
         libraryService.getAllLoans(),
         childService.getAll(),
+        libraryService.getLibraryRules(),
       ])
 
       setBooks(allBooks)
       setLoans(allLoans)
       setChildren(allChildren)
+      setLibraryRules(rules)
     } catch (err) {
       console.error('Erro ao carregar dados da biblioteca:', err)
     } finally {
@@ -168,7 +182,7 @@ export default function LibraryPage() {
     if (!editingCopy || !copyForm.copy_number.trim()) {
       toast({
         title: 'Atenção',
-        description: 'O número de tombo é obrigatório.',
+        description: 'O código do exemplar é obrigatório.',
         variant: 'destructive',
       })
       return
@@ -177,14 +191,14 @@ export default function LibraryPage() {
     try {
       setSavingCopy(true)
       await libraryService.updateCopy(editingCopy.id, {
-        copy_number: copyForm.copy_number,
+        copy_number: copyForm.copy_number.trim(),
         condition: copyForm.condition as any,
         status: copyForm.status as any,
         notes: copyForm.notes,
       })
       toast({
         title: 'Exemplar atualizado!',
-        description: 'Tombo, estado de conservação e disponibilidade foram salvos.',
+        description: 'Código, estado de conservação e disponibilidade foram salvos.',
       })
       setCopyEditOpen(false)
       setEditingCopy(null)
@@ -197,6 +211,42 @@ export default function LibraryPage() {
       })
     } finally {
       setSavingCopy(false)
+    }
+  }
+
+  const handleOpenAddCopy = async (book: Book) => {
+    setBookForNewCopy(book)
+    try {
+      const generatedCode = await libraryService.getNextCopyCode(book.id, book.title)
+      setNewCopyCode(generatedCode)
+    } catch (_) {
+      const prefix = libraryService.generateTitleInitials(book.title || '')
+      setNewCopyCode(`${prefix}-${(book.copies?.length || 0) + 1}`)
+    }
+    setAddCopyOpen(true)
+  }
+
+  const handleConfirmAddCopy = async () => {
+    if (!bookForNewCopy) return
+    try {
+      setAddingCopy(true)
+      await libraryService.addCopy(bookForNewCopy.id, newCopyCode)
+      toast({
+        title: 'Exemplar adicionado!',
+        description: `O exemplar ${newCopyCode} foi cadastrado com sucesso.`,
+      })
+      setAddCopyOpen(false)
+      setBookForNewCopy(null)
+      setNewCopyCode('')
+      loadLibraryData()
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao adicionar exemplar',
+        description: err?.message,
+        variant: 'destructive',
+      })
+    } finally {
+      setAddingCopy(false)
     }
   }
 
@@ -213,7 +263,7 @@ export default function LibraryPage() {
 
     if (
       !window.confirm(
-        `Excluir o exemplar de tombo ${copy.copy_number}? Esta ação não pode ser desfeita.`,
+        `Excluir o exemplar de código ${copy.copy_number}? Esta ação não pode ser desfeita.`,
       )
     ) {
       return
@@ -223,7 +273,7 @@ export default function LibraryPage() {
       await libraryService.deleteCopy(copy.id)
       toast({
         title: 'Exemplar excluído',
-        description: `O tombo ${copy.copy_number} foi removido do acervo.`,
+        description: `O código ${copy.copy_number} foi removido do acervo.`,
       })
       loadLibraryData()
     } catch (err: any) {
@@ -245,7 +295,7 @@ export default function LibraryPage() {
       await libraryService.createBook(bookForm, bookForm.initialCopies)
       toast({
         title: 'Livro cadastrado!',
-        description: 'O título e seus exemplares de tombo foram criados.',
+        description: 'O título e seus exemplares foram criados com códigos sequenciais.',
       })
       setNewBookOpen(false)
       setBookForm({
@@ -275,10 +325,11 @@ export default function LibraryPage() {
     }
 
     try {
-      await libraryService.borrowBook(selectedCopyId, selectedChildId, 7)
+      const days = libraryRules.loanDurationDays || 7
+      await libraryService.borrowBook(selectedCopyId, selectedChildId, days)
       toast({
         title: 'Empréstimo realizado!',
-        description: 'Prazo de 7 dias registrado com sucesso.',
+        description: `Prazo de devolução de ${days} dias registrado com sucesso.`,
       })
       setLoanOpen(false)
       setSelectedCopyId('')
@@ -312,7 +363,7 @@ export default function LibraryPage() {
       .filter((c) => c.status === 'disponivel')
       .map((c) => ({
         copyId: c.id,
-        tombo: c.copy_number,
+        code: c.copy_number,
         bookTitle: b.title,
       })),
   )
@@ -335,8 +386,10 @@ export default function LibraryPage() {
             Biblioteca Infantil
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-            Acervo de literatura espírita infantil, controle de tombos e empréstimos (limite: 2
-            livros por criança, 7 dias).
+            Acervo de literatura espírita infantil, controle de exemplares e empréstimos (limite:{' '}
+            {libraryRules.maxLoansPerChild}{' '}
+            {libraryRules.maxLoansPerChild === 1 ? 'livro' : 'livros'} por criança, prazo de{' '}
+            {libraryRules.loanDurationDays} dias conforme configurações).
           </p>
         </div>
 
@@ -437,9 +490,21 @@ export default function LibraryPage() {
                     </p>
 
                     <div>
-                      <p className="text-[11px] font-semibold text-muted-foreground uppercase mb-1">
-                        Exemplares e Tombos:
-                      </p>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-[11px] font-semibold text-muted-foreground uppercase">
+                          Exemplares:
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleOpenAddCopy(book)}
+                          className="h-5 px-1.5 text-[10px] text-indigo-600 hover:text-indigo-800"
+                          title="Adicionar novo exemplar físico para esta obra"
+                        >
+                          <Plus className="h-3 w-3 mr-0.5" />
+                          Novo Exemplar
+                        </Button>
+                      </div>
                       <div className="flex flex-wrap gap-1.5">
                         {(book.copies || []).map((cp) => (
                           <Badge
@@ -460,6 +525,11 @@ export default function LibraryPage() {
                             <Pencil className="h-2.5 w-2.5 ml-1 opacity-60" />
                           </Badge>
                         ))}
+                        {(book.copies || []).length === 0 && (
+                          <span className="text-[11px] text-muted-foreground italic">
+                            Nenhum exemplar cadastrado.
+                          </span>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -523,7 +593,7 @@ export default function LibraryPage() {
                       {loan.expand?.copy_id?.expand?.book_id?.title || 'Título do Livro'}
                     </h3>
                     <p className="text-muted-foreground text-[11px]">
-                      Tombo: <strong>{loan.expand?.copy_id?.copy_number}</strong>
+                      Código: <strong>{loan.expand?.copy_id?.copy_number}</strong>
                     </p>
                   </div>
                   <Badge
@@ -580,7 +650,7 @@ export default function LibraryPage() {
                       {loan.expand?.copy_id?.expand?.book_id?.title || 'Título do Livro'}
                     </h3>
                     <p className="text-muted-foreground text-[11px]">
-                      Tombo: <strong>{loan.expand?.copy_id?.copy_number}</strong>
+                      Código: <strong>{loan.expand?.copy_id?.copy_number}</strong>
                     </p>
                   </div>
                   <Badge
@@ -616,7 +686,7 @@ export default function LibraryPage() {
             {overdueLoans.length === 0 && (
               <div className="col-span-full py-12 text-center text-muted-foreground text-xs">
                 <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
-                Nenhum empréstimo atrasado. Todos os prazos de 7 dias estão respeitados!
+                Nenhum empréstimo atrasado. Todos os prazos de devolução estão respeitados!
               </div>
             )}
           </div>
@@ -638,8 +708,8 @@ export default function LibraryPage() {
             </DialogTitle>
             <DialogDescription className="text-xs">
               {editingBook
-                ? 'Altere os dados da obra. Os exemplares físicos (tombos) continuam vinculados.'
-                : 'Informe os dados da obra e a quantidade de exemplares físicos para gerar os tombos.'}
+                ? 'Altere os dados da obra. Os exemplares físicos continuam vinculados.'
+                : 'Informe os dados da obra e a quantidade de exemplares físicos para gerar os códigos automaticamente.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -737,21 +807,21 @@ export default function LibraryPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal: Editar Exemplar (Tombo, Estado, Status, Notas) */}
+      {/* Modal: Editar Exemplar (Código, Estado, Status, Notas) */}
       <Dialog open={copyEditOpen} onOpenChange={setCopyEditOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar Exemplar</DialogTitle>
             <DialogDescription className="text-xs">
-              Ajuste o tombo, o estado de conservação e a disponibilidade do exemplar físico.
+              Ajuste o código, o estado de conservação e a disponibilidade do exemplar físico.
             </DialogDescription>
           </DialogHeader>
 
           <div className="py-2 space-y-3 text-xs">
             <div className="space-y-1">
-              <Label>Número de Tombo *</Label>
+              <Label>Código do Exemplar *</Label>
               <Input
-                placeholder="Ex: T-001"
+                placeholder="Ex: PP-1"
                 value={copyForm.copy_number}
                 onChange={(e) => setCopyForm({ ...copyForm, copy_number: e.target.value })}
               />
@@ -832,20 +902,62 @@ export default function LibraryPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Modal: Novo Exemplar para Livro Existente */}
+      <Dialog open={addCopyOpen} onOpenChange={setAddCopyOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adicionar Novo Exemplar</DialogTitle>
+            <DialogDescription className="text-xs">
+              Cadastre um novo exemplar físico para a obra <strong>{bookForNewCopy?.title}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-2 space-y-3 text-xs">
+            <div className="space-y-1">
+              <Label>Código do Exemplar *</Label>
+              <Input
+                placeholder="Ex: PP-1"
+                value={newCopyCode}
+                onChange={(e) => setNewCopyCode(e.target.value)}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Código gerado automaticamente com as iniciais do título + sequencial.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setAddCopyOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleConfirmAddCopy}
+              disabled={addingCopy}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              {addingCopy ? 'Adicionando...' : 'Cadastrar Exemplar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Modal: Novo Empréstimo */}
       <Dialog open={loanOpen} onOpenChange={setLoanOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Registrar Empréstimo de Livro</DialogTitle>
             <DialogDescription className="text-xs">
-              Selecione o exemplar e a criança. O sistema valida automaticamente o limite de 2
-              livros por aluno e o prazo de 7 dias.
+              Selecione o exemplar e a criança. O sistema valida automaticamente o limite de{' '}
+              {libraryRules.maxLoansPerChild}{' '}
+              {libraryRules.maxLoansPerChild === 1 ? 'livro' : 'livros'} por aluno e o prazo de{' '}
+              {libraryRules.loanDurationDays} dias configurado.
             </DialogDescription>
           </DialogHeader>
 
           <div className="py-2 space-y-3 text-xs">
             <div className="space-y-1">
-              <Label>Exemplar Disponível (Tombo)</Label>
+              <Label>Exemplar Disponível (Código)</Label>
               <Select value={selectedCopyId} onValueChange={setSelectedCopyId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione um exemplar..." />
@@ -853,7 +965,7 @@ export default function LibraryPage() {
                 <SelectContent>
                   {availableCopies.map((cp) => (
                     <SelectItem key={cp.copyId} value={cp.copyId} className="text-xs">
-                      {cp.tombo} — {cp.bookTitle}
+                      {cp.code} — {cp.bookTitle}
                     </SelectItem>
                   ))}
                 </SelectContent>

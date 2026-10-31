@@ -640,7 +640,8 @@ export default function SettingsPage() {
                   Regras da Biblioteca Infantil
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Limites de empréstimos simultâneos e prazo padrão de devolução
+                  Limites de empréstimos simultâneos e prazo padrão de devolução aplicados em todo o
+                  Sistema Infanto-CEP
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-xs">
@@ -659,7 +660,7 @@ export default function SettingsPage() {
                     }
                   />
                   <p className="text-[11px] text-muted-foreground">
-                    Padrão CEP-Coligação Espírita Progressista: 2 exemplares
+                    Padrão institucional: 2 exemplares simultâneos
                   </p>
                 </div>
 
@@ -668,7 +669,7 @@ export default function SettingsPage() {
                   <Input
                     type="number"
                     min={1}
-                    max={30}
+                    max={60}
                     value={rulesLibrary.loanDurationDays}
                     onChange={(e) =>
                       setRulesLibrary({
@@ -678,7 +679,7 @@ export default function SettingsPage() {
                     }
                   />
                   <p className="text-[11px] text-muted-foreground">
-                    Padrão CEP-Coligação Espírita Progressista: 7 dias (de um sábado ao outro)
+                    Utilizado no cálculo da devolução prevista e nos alertas de atraso na Biblioteca
                   </p>
                 </div>
 

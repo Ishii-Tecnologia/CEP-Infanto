@@ -100,8 +100,8 @@ export default function Layout() {
       roles: ['admin', 'dirigente', 'professor', 'auxiliar'] as UserRole[],
     },
     {
-      title: 'Configurações',
-      shortTitle: 'Configurações',
+      title: 'Operadores e Configurações',
+      shortTitle: 'Operadores e Config.',
       path: '/configuracoes',
       icon: Settings,
       roles: ['admin', 'dirigente'] as UserRole[],
@@ -266,7 +266,7 @@ export default function Layout() {
             {/* Centro / Itens de Navegação no Desktop (sem rolagem horizontal, sempre visíveis) */}
             <nav
               aria-label="Menu principal"
-              className="hidden lg:flex items-center flex-wrap justify-center gap-1 sm:gap-1.5 py-1"
+              className="hidden lg:flex items-center flex-wrap justify-center gap-0.5 xl:gap-1.5 py-1"
             >
               {filteredNavItems.map((item) => {
                 const Icon = item.icon
@@ -274,8 +274,9 @@ export default function Layout() {
                   <NavLink
                     key={item.path}
                     to={item.path}
+                    title={item.title}
                     className={({ isActive }) =>
-                      `flex items-center space-x-1.5 px-2.5 xl:px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                      `flex items-center space-x-1 xl:space-x-1.5 px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
                         isActive
                           ? 'bg-sky-800 text-white shadow-sm font-semibold ring-1 ring-sky-400/50'
                           : 'text-sky-100 hover:bg-sky-600/70 hover:text-white'
@@ -283,9 +284,9 @@ export default function Layout() {
                     }
                   >
                     <Icon className="h-3.5 w-3.5 shrink-0 text-sky-200" />
-                    {/* Em telas menores de 1280px (lg), exibe título conciso para caber com folga; em xl+, exibe completo */}
-                    <span className="hidden xl:inline">{item.title}</span>
-                    <span className="inline xl:hidden">{item.shortTitle}</span>
+                    {/* Em telas menores de 1280px (lg), exibe título conciso para caber com folga; em 2xl+, exibe completo */}
+                    <span className="hidden 2xl:inline">{item.title}</span>
+                    <span className="inline 2xl:hidden">{item.shortTitle}</span>
                   </NavLink>
                 )
               })}

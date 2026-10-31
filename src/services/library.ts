@@ -28,15 +28,120 @@ export const libraryService = {
     })
   },
 
+  /**
+   * Extrai as iniciais significativas do título da obra (ex.: "Pequeno Príncipe" -> "PP")
+   */
+  generateTitleInitials(title: string): string {
+    if (!title || typeof title !== 'string') return 'EX'
+    const clean = title
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9\s]/g, ' ')
+      .trim()
+
+    if (!clean) return 'EX'
+
+    const stopWords = new Set([
+      'A',
+      'O',
+      'AS',
+      'OS',
+      'UM',
+      'UMA',
+      'UNS',
+      'UMAS',
+      'DE',
+      'DO',
+      'DA',
+      'DOS',
+      'DAS',
+      'EM',
+      'NO',
+      'NA',
+      'NOS',
+      'NAS',
+      'POR',
+      'PARA',
+      'COM',
+      'E',
+      'QUE',
+    ])
+
+    const words = clean.split(/\s+/).filter(Boolean)
+    const meaningful = words.filter((w) => !stopWords.has(w.toUpperCase()))
+    const chosen = meaningful.length > 0 ? meaningful : words
+
+    const initials = chosen
+      .slice(0, 4)
+      .map((w) => w[0].toUpperCase())
+      .join('')
+
+    return initials || 'EX'
+  },
+
+  /**
+   * Gera o próximo código de exemplar para a obra (ex: PP-1, PP-2)
+   */
+  async getNextCopyCode(bookId: string, bookTitle?: string): Promise<string> {
+    let title = bookTitle
+    if (!title) {
+      const book = await pb.collection('books').getOne<Book>(bookId)
+      title = book.title
+    }
+
+    const prefix = this.generateTitleInitials(title || '')
+    const existingCopies = await pb.collection('book_copies').getFullList<BookCopy>({
+      filter: `book_id = "${bookId}"`,
+      fields: 'copy_number',
+    })
+
+    let maxSeq = 0
+    for (const copy of existingCopies) {
+      const num = copy.copy_number || ''
+      // Formato esperado: PREFIXO-SEQUENCIAL
+      const parts = num.split('-')
+      if (parts.length >= 2) {
+        const lastPart = parseInt(parts[parts.length - 1], 10)
+        if (!isNaN(lastPart) && lastPart > maxSeq) {
+          maxSeq = lastPart
+        }
+      }
+    }
+
+    return `${prefix}-${maxSeq + 1}`
+  },
+
+  /**
+   * Obtém as regras configuradas da biblioteca (prazo em dias e limite de livros)
+   */
+  async getLibraryRules(): Promise<{ maxLoansPerChild: number; loanDurationDays: number }> {
+    try {
+      const record = await pb
+        .collection('system_settings')
+        .getFirstListItem<any>('key = "rules_library"')
+      const val = typeof record.value === 'string' ? JSON.parse(record.value) : record.value
+      return {
+        maxLoansPerChild: Number(val?.maxLoansPerChild) || 2,
+        loanDurationDays: Number(val?.loanDurationDays) || 7,
+      }
+    } catch (_) {
+      return {
+        maxLoansPerChild: 2,
+        loanDurationDays: 7,
+      }
+    }
+  },
+
   async createBook(bookData: Partial<Book>, initialCopies = 1): Promise<Book> {
     const book = await pb.collection('books').create<Book>(bookData)
+    const prefix = this.generateTitleInitials(book.title || '')
 
     const copies: BookCopy[] = []
     for (let i = 1; i <= Math.max(1, initialCopies); i++) {
-      const tombo = `TOMBO-${Date.now().toString().slice(-4)}-${i}`
+      const copyCode = `${prefix}-${i}`
       const copy = await pb.collection('book_copies').create<BookCopy>({
         book_id: book.id,
-        copy_number: tombo,
+        copy_number: copyCode,
         condition: 'novo',
         status: 'disponivel',
       })
@@ -48,12 +153,13 @@ export const libraryService = {
 
   async addCopy(
     bookId: string,
-    copyNumber: string,
+    copyNumber?: string,
     condition: 'novo' | 'bom' | 'regular' | 'danificado' = 'novo',
   ): Promise<BookCopy> {
+    const finalCode = copyNumber?.trim() || (await this.getNextCopyCode(bookId))
     return pb.collection('book_copies').create<BookCopy>({
       book_id: bookId,
-      copy_number: copyNumber,
+      copy_number: finalCode,
       condition,
       status: 'disponivel',
     })
@@ -101,12 +207,19 @@ export const libraryService = {
     })
   },
 
-  async borrowBook(copyId: string, childId: string, durationDays = 7): Promise<BookLoan> {
-    // 1. Verificar se a criança já tem 2 empréstimos ativos
+  async borrowBook(copyId: string, childId: string, durationDays?: number): Promise<BookLoan> {
+    // 0. Obter parâmetros das configurações do sistema caso não informado
+    const rules = await this.getLibraryRules()
+    const limit = rules.maxLoansPerChild || 2
+    const days = durationDays && durationDays > 0 ? durationDays : rules.loanDurationDays || 7
+
+    // 1. Verificar se a criança já atingiu o limite de empréstimos configurado
     const activeLoans = await this.getActiveLoansForChild(childId)
-    if (activeLoans.length >= 2) {
+    if (activeLoans.length >= limit) {
       throw new Error(
-        'A criança já possui o limite máximo de 2 livros emprestados simultaneamente.',
+        `A criança já possui o limite máximo de ${limit} ${
+          limit === 1 ? 'livro emprestado' : 'livros emprestados'
+        } simultaneamente.`,
       )
     }
 
@@ -118,7 +231,7 @@ export const libraryService = {
 
     const loanDate = new Date()
     const dueDate = new Date()
-    dueDate.setDate(loanDate.getDate() + durationDays)
+    dueDate.setDate(loanDate.getDate() + days)
 
     const loan = await pb.collection('book_loans').create<BookLoan>({
       copy_id: copyId,

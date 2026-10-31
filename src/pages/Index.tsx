@@ -31,6 +31,7 @@ export default function Index() {
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [overdueLoans, setOverdueLoans] = useState<BookLoan[]>([])
   const [families, setFamilies] = useState<Family[]>([])
+  const [libraryRules, setLibraryRules] = useState({ maxLoansPerChild: 2, loanDurationDays: 7 })
   const [nextLesson, setNextLesson] = useState<Lesson | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -43,11 +44,14 @@ export default function Index() {
   const loadDashboardData = async () => {
     try {
       setLoading(true)
-      const [allLessons, allLoans, allFamilies] = await Promise.all([
+      const [allLessons, allLoans, allFamilies, rules] = await Promise.all([
         lessonService.getAll(schoolYear.year),
         libraryService.getAllLoans(),
         familyService.getAll(),
+        libraryService.getLibraryRules(),
       ])
+
+      setLibraryRules(rules)
 
       setLessons(allLessons)
       setFamilies(allFamilies)
@@ -333,7 +337,8 @@ export default function Index() {
               {overdueLoans.length === 0 ? (
                 <div className="text-center py-6 text-muted-foreground text-xs">
                   <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
-                  Todos os livros estão em dia com o prazo de devolução de 7 dias.
+                  Todos os livros estão em dia com o prazo de devolução de{' '}
+                  {libraryRules.loanDurationDays} dias.
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -397,7 +402,11 @@ export default function Index() {
                 <p className="font-semibold text-slate-800 dark:text-slate-200">
                   Regras da Biblioteca:
                 </p>
-                <p>Até 2 livros simultâneos por criança com prazo de 7 dias para devolução.</p>
+                <p>
+                  Até {libraryRules.maxLoansPerChild}{' '}
+                  {libraryRules.maxLoansPerChild === 1 ? 'livro simultâneo' : 'livros simultâneos'}{' '}
+                  por criança com prazo de {libraryRules.loanDurationDays} dias para devolução.
+                </p>
               </div>
             </CardContent>
           </Card>

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-31T03:38:33.066Z",
+  "generatedAt": "2026-10-31T04:24:43.779Z",
   "collections": [
     {
       "name": "users",
@@ -679,8 +679,8 @@
         }
       ],
       "indexes": [
-        "CREATE UNIQUE INDEX idx_book_copies_number ON book_copies (copy_number)",
-        "CREATE INDEX idx_book_copies_book ON book_copies (book_id)"
+        "CREATE INDEX idx_book_copies_book ON book_copies (book_id)",
+        "CREATE UNIQUE INDEX `idx_book_copies_book_number` ON `book_copies` (book_id, copy_number)"
       ]
     },
     {
