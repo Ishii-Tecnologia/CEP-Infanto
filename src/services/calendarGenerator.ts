@@ -87,16 +87,67 @@ export const DEFAULT_THEMES_30 = [
   },
 ]
 
+// Helper para normalizar qualquer representação de data (ISO YYYY-MM-DD ou BR DD/MM/AAAA)
+function toIsoDateOnly(dateStr?: string): string {
+  if (!dateStr) return ''
+  const trimmed = dateStr.trim().split('T')[0].split(' ')[0]
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return trimmed
+  }
+  const matchBR = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+  if (matchBR) {
+    const [, d, m, y] = matchBR
+    return `${y}-${m}-${d}`
+  }
+  return trimmed
+}
+
+// Pequena pausa para evitar estourar o rate limit de requisições por segundo
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// Executa operação com retry automático para erros transitórios (ex: 429 Too Many Requests)
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 4, baseDelay = 350): Promise<T> {
+  let attempt = 0
+  while (true) {
+    try {
+      return await fn()
+    } catch (err: any) {
+      attempt++
+      const status = err?.status || err?.statusCode || err?.data?.code
+      const isRateLimit = status === 429 || String(err?.message || '').includes('Too Many Requests')
+      if (attempt <= maxRetries && isRateLimit) {
+        const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 100
+        await sleep(delay)
+        continue
+      }
+      throw err
+    }
+  }
+}
+
 export function generateSaturdaysList(
   startDateStr: string,
   recessSaturdays: RecessSaturday[],
   count = 30,
 ): string[] {
   const result: string[] = []
-  const recessSet = new Set(recessSaturdays.map((r) => r.date))
+  const recessSet = new Set(
+    (recessSaturdays || []).map((r) => toIsoDateOnly(r.date)).filter(Boolean),
+  )
+
+  const cleanStart = toIsoDateOnly(startDateStr)
+  if (!cleanStart) {
+    throw new Error('Data de início do ano letivo não informada ou inválida.')
+  }
 
   // Iniciar na data indicada
-  const [startYear, startMonth, startDay] = startDateStr.split('-').map(Number)
+  const [startYear, startMonth, startDay] = cleanStart.split('-').map(Number)
+  if (!startYear || !startMonth || !startDay) {
+    throw new Error(
+      `Data de início inválida: "${startDateStr}". Utilize o formato dd/mm/aaaa ou aaaa-mm-dd.`,
+    )
+  }
+
   const current = new Date(Date.UTC(startYear, startMonth - 1, startDay, 12, 0, 0))
 
   // Se o dia não for sábado (dia da semana 6), avança até o próximo sábado
@@ -130,31 +181,100 @@ export async function syncOrRegenerateCalendar(
   onProgress?: (msg: string) => void,
 ) {
   const year = config.year || 2027
-  const saturdays = generateSaturdaysList(config.startDate, recesses, 30)
-
-  // 1. Busca todas as aulas já cadastradas para o ano
-  const existingLessons = await pb.collection('lessons').getFullList<Lesson>({
-    filter: `year=${year}`,
-    sort: 'session_number',
-  })
-
-  // Se já temos exatamente as 30 aulas, atualiza as datas respeitando os planos e presenças existentes
-  if (existingLessons.length > 0) {
-    for (let i = 0; i < existingLessons.length; i++) {
-      const lesson = existingLessons[i]
-      const newDate = saturdays[i] || saturdays[saturdays.length - 1]
-      const isoDate = `${newDate} 00:00:00.000Z`
-      if (lesson.date.split('T')[0] !== newDate) {
-        onProgress?.(`Atualizando Aula #${lesson.session_number} para ${newDate}...`)
-        await pb.collection('lessons').update(lesson.id, {
-          date: isoDate,
-        })
-      }
-    }
-    return { count: existingLessons.length, action: 'updated_dates' }
+  const startDate = toIsoDateOnly(config.startDate)
+  if (!startDate) {
+    throw new Error('A data de início das aulas é obrigatória para sincronizar o calendário.')
   }
 
-  // Se não houver aulas para esse ano, cria as 30 aulas com planos pedagógicos
+  const saturdays = generateSaturdaysList(startDate, recesses, 30)
+
+  // 1. Busca todas as aulas já cadastradas para o ano
+  const existingLessons = await withRetry(() =>
+    pb.collection('lessons').getFullList<Lesson>({
+      filter: `year=${year}`,
+      sort: 'session_number',
+    }),
+  )
+
+  // Caso A: Se já existem aulas para este ano (completas ou parciais),
+  // atualizamos as datas das aulas existentes respeitando temas, planos e presenças
+  // e completamos eventuais sessões faltantes até 30.
+  if (existingLessons.length > 0) {
+    onProgress?.(`Ajustando datas para o ano letivo ${year}...`)
+
+    // Passo 1: Atualizar datas das aulas existentes
+    for (let i = 0; i < existingLessons.length; i++) {
+      const lesson = existingLessons[i]
+      const sessionIdx = (lesson.session_number || i + 1) - 1
+      const newDate = saturdays[sessionIdx] || saturdays[i] || saturdays[saturdays.length - 1]
+      const isoDate = `${newDate} 00:00:00.000Z`
+
+      const currentLessonDate = toIsoDateOnly(lesson.date)
+      if (currentLessonDate !== newDate) {
+        onProgress?.(`Atualizando Aula #${lesson.session_number} para ${newDate}...`)
+        await withRetry(() =>
+          pb.collection('lessons').update(lesson.id, {
+            date: isoDate,
+          }),
+        )
+        await sleep(100)
+      }
+    }
+
+    // Passo 2: Se por algum motivo o ano tinha menos de 30 aulas (ex: 26 aulas geradas antes de um rate limit),
+    // completa as sessões faltantes preservando as que já existem.
+    const existingSessionNumbers = new Set(existingLessons.map((l) => l.session_number))
+    let createdMissingCount = 0
+
+    for (let i = 0; i < saturdays.length; i++) {
+      const sessionNum = i + 1
+      if (!existingSessionNumbers.has(sessionNum)) {
+        createdMissingCount++
+        const sDate = saturdays[i]
+        const themeInfo = DEFAULT_THEMES_30[i] || {
+          block: 'Pedagógico Geral',
+          theme: `Encontro Temático #${sessionNum}`,
+        }
+
+        onProgress?.(`Completando Aula #${sessionNum} (${sDate})...`)
+        const createdLesson = await withRetry(() =>
+          pb.collection('lessons').create({
+            date: `${sDate} 00:00:00.000Z`,
+            year: year,
+            session_number: sessionNum,
+            central_theme: themeInfo.theme,
+            thematic_block: themeInfo.block,
+            status: 'scheduled',
+          }),
+        )
+        await sleep(100)
+
+        // Cria planos pedagógicos para a aula que faltava
+        const plans = createDefaultPlans(themeInfo.theme)
+        for (const p of plans) {
+          await withRetry(() =>
+            pb.collection('lesson_plans').create({
+              lesson_id: createdLesson.id,
+              classroom: p.classroom,
+              title: p.title,
+              objective: p.objective,
+              approach: p.approach,
+              materials: p.materials,
+            }),
+          )
+          await sleep(60)
+        }
+      }
+    }
+
+    const totalCount = existingLessons.length + createdMissingCount
+    return {
+      count: totalCount,
+      action: createdMissingCount > 0 ? 'completed_matrix' : 'updated_dates',
+    }
+  }
+
+  // Caso B: Se não houver nenhuma aula para este ano, cria as 30 aulas com planos pedagógicos
   onProgress?.(`Criando matriz de 30 sábados para o ano ${year}...`)
   for (let i = 0; i < saturdays.length; i++) {
     const sessionNum = i + 1
@@ -164,58 +284,68 @@ export async function syncOrRegenerateCalendar(
       theme: `Encontro Temático #${sessionNum}`,
     }
 
-    const createdLesson = await pb.collection('lessons').create({
-      date: `${sDate} 00:00:00.000Z`,
-      year: year,
-      session_number: sessionNum,
-      central_theme: themeInfo.theme,
-      thematic_block: themeInfo.block,
-      status: 'scheduled',
-    })
+    onProgress?.(`Criando Aula #${sessionNum} de 30 (${sDate})...`)
+    const createdLesson = await withRetry(() =>
+      pb.collection('lessons').create({
+        date: `${sDate} 00:00:00.000Z`,
+        year: year,
+        session_number: sessionNum,
+        central_theme: themeInfo.theme,
+        thematic_block: themeInfo.block,
+        status: 'scheduled',
+      }),
+    )
+    await sleep(100)
 
     // Gera planos pedagógicos padrão para as 4 salas
-    const initialPlans = [
-      {
-        c: 'A',
-        title: `Linguagem Lúdica: ${themeInfo.theme}`,
-        obj: 'Apresentar o tema com historinhas, músicas e desenhos para os pequenos.',
-        approach: 'Roda de acolhimento, contação com figuras coloridas e pintura.',
-        mat: 'Folhas A4 ilustradas, giz de cera, aparelho de som.',
-      },
-      {
-        c: 'B',
-        title: `Compreensão Ativa: ${themeInfo.theme}`,
-        obj: 'Estimular o diálogo e a identificação de atitudes práticas no dia a dia.',
-        approach: 'Leitura participativa, perguntas disparadoras e dramatização curta.',
-        mat: 'Cartolina, canetinhas, fichas com situações-problema.',
-      },
-      {
-        c: 'C',
-        title: `Reflexão Moral e Evangélica: ${themeInfo.theme}`,
-        obj: 'Aprofundar os ensinamentos com analogias cotidianas.',
-        approach: 'Debate mediado, análise evangélica e dinâmica reflexiva em duplas.',
-        mat: 'Textos evangélicos infantojuvenis, post-its, caderno.',
-      },
-      {
-        c: 'D',
-        title: `Juventude e Vivência: ${themeInfo.theme}`,
-        obj: 'Conectar o tema aos desafios cotidianos, ética e convivência fraterna.',
-        approach: 'Roda de conversa aberta, estudo de caso e debate mediado.',
-        mat: 'Textos de apoio, mural conceitual, fichas de discussão.',
-      },
-    ]
-
+    const initialPlans = createDefaultPlans(themeInfo.theme)
     for (const p of initialPlans) {
-      await pb.collection('lesson_plans').create({
-        lesson_id: createdLesson.id,
-        classroom: p.c,
-        title: p.title,
-        objective: p.obj,
-        approach: p.approach,
-        materials: p.mat,
-      })
+      await withRetry(() =>
+        pb.collection('lesson_plans').create({
+          lesson_id: createdLesson.id,
+          classroom: p.classroom,
+          title: p.title,
+          objective: p.objective,
+          approach: p.approach,
+          materials: p.materials,
+        }),
+      )
+      await sleep(60)
     }
   }
 
   return { count: saturdays.length, action: 'created_new' }
+}
+
+function createDefaultPlans(theme: string) {
+  return [
+    {
+      classroom: 'A',
+      title: `Linguagem Lúdica: ${theme}`,
+      objective: 'Apresentar o tema com historinhas, músicas e desenhos para os pequenos.',
+      approach: 'Roda de acolhimento, contação com figuras coloridas e pintura.',
+      materials: 'Folhas A4 ilustradas, giz de cera, aparelho de som.',
+    },
+    {
+      classroom: 'B',
+      title: `Compreensão Ativa: ${theme}`,
+      objective: 'Estimular o diálogo e a identificação de atitudes práticas no dia a dia.',
+      approach: 'Leitura participativa, perguntas disparadoras e dramatização curta.',
+      materials: 'Cartolina, canetinhas, fichas com situações-problema.',
+    },
+    {
+      classroom: 'C',
+      title: `Reflexão Moral e Evangélica: ${theme}`,
+      objective: 'Aprofundar os ensinamentos com analogias cotidianas.',
+      approach: 'Debate mediado, análise evangélica e dinâmica reflexiva em duplas.',
+      materials: 'Textos evangélicos infantojuvenis, post-its, caderno.',
+    },
+    {
+      classroom: 'D',
+      title: `Juventude e Vivência: ${theme}`,
+      objective: 'Conectar o tema aos desafios cotidianos, ética e convivência fraterna.',
+      approach: 'Roda de conversa aberta, estudo de caso e debate mediado.',
+      materials: 'Textos de apoio, mural conceitual, fichas de discussão.',
+    },
+  ]
 }

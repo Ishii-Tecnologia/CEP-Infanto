@@ -321,6 +321,15 @@ export default function SettingsPage() {
   const handleSyncCalendarDates = async () => {
     try {
       setSyncingCalendar(true)
+      if (!yearForm.startDate) {
+        toast({
+          title: 'Data de início obrigatória',
+          description: 'Defina a Data de Início das Aulas antes de sincronizar o calendário.',
+          variant: 'destructive',
+        })
+        return
+      }
+
       // Primeiro salva as configurações
       await saveSchoolYearAndRecesses(yearForm, recessList)
       // Em seguida sincroniza o calendário de sábados de forma segura (preserva temas, planos e presenças)
@@ -330,12 +339,20 @@ export default function SettingsPage() {
         description:
           res.action === 'updated_dates'
             ? `As datas dos ${res.count} sábados foram ajustadas às novas janelas sem perder planos ou presenças.`
-            : `Foram gerados ${res.count} sábados letivos para o ano ${yearForm.year}.`,
+            : res.action === 'completed_matrix'
+              ? `A matriz de ${res.count} sábados para ${yearForm.year} foi atualizada e completada com sucesso.`
+              : `Foram gerados ${res.count} sábados letivos para o ano ${yearForm.year}.`,
       })
     } catch (err: any) {
+      const errMsg =
+        err?.data?.message ||
+        err?.message ||
+        (err?.status === 429
+          ? 'Muitas requisições simultâneas. Tente novamente em instantes.'
+          : 'Falha na sincronização.')
       toast({
         title: 'Erro ao sincronizar calendário',
-        description: err?.message || 'Falha na sincronização.',
+        description: errMsg,
         variant: 'destructive',
       })
     } finally {
