@@ -199,7 +199,7 @@ export default function AttendanceReportsPage() {
             </p>
           </div>
           <div className="text-right text-xs text-slate-500">
-            <p>Data de emissão: {new Date().toLocaleDateString('pt-BR')}</p>
+            <p>Data de emissão: {formatDate(new Date())}</p>
             <p>Emitido por: {user?.name || 'Administração'}</p>
           </div>
         </div>
@@ -357,9 +357,16 @@ export default function AttendanceReportsPage() {
           {periodType === 'custom' && (
             <>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Data Inicial
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Data Inicial
+                  </Label>
+                  {startDate && (
+                    <span className="text-[10px] text-sky-700 font-mono font-medium">
+                      {formatDate(startDate)}
+                    </span>
+                  )}
+                </div>
                 <Input
                   type="date"
                   value={startDate}
@@ -368,9 +375,16 @@ export default function AttendanceReportsPage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Data Final
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Data Final
+                  </Label>
+                  {endDate && (
+                    <span className="text-[10px] text-sky-700 font-mono font-medium">
+                      {formatDate(endDate)}
+                    </span>
+                  )}
+                </div>
                 <Input
                   type="date"
                   value={endDate}

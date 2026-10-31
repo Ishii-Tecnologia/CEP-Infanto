@@ -986,7 +986,14 @@ export default function FamiliesPage() {
                         </div>
 
                         <div className="space-y-1">
-                          <Label className="text-xs">Data de Nascimento *</Label>
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs">Data de Nascimento *</Label>
+                            {child.birth_date && (
+                              <span className="text-[10px] text-indigo-600 font-mono font-medium">
+                                {formatDate(child.birth_date)}
+                              </span>
+                            )}
+                          </div>
                           <Input
                             type="date"
                             value={child.birth_date}
@@ -1118,7 +1125,9 @@ export default function FamiliesPage() {
                         >
                           <div>
                             <span className="font-bold">{c.name || 'Sem nome'}</span>
-                            <span className="text-muted-foreground ml-2">({age} anos)</span>
+                            <span className="text-muted-foreground ml-2">
+                              • Nasc: {formatDate(c.birth_date)} ({age} anos)
+                            </span>
                           </div>
                           <Badge variant="outline" className={badge.color}>
                             {badge.name}

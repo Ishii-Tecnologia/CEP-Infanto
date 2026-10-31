@@ -37,6 +37,7 @@ import { useToast } from '@/hooks/use-toast'
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog'
 
 import { useAcademic, SchoolYearConfig, RecessSaturday } from '@/contexts/AcademicContext'
+import { formatDate } from '@/lib/academic'
 import { syncOrRegenerateCalendar } from '@/services/calendarGenerator'
 import { Plus, X, Sliders, RefreshCw } from 'lucide-react'
 
@@ -819,7 +820,14 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <Label className="text-xs font-semibold">Data de Início das Aulas</Label>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold">Data de Início das Aulas</Label>
+                      {yearForm.startDate && (
+                        <span className="text-[10px] text-indigo-600 font-mono font-medium">
+                          {formatDate(yearForm.startDate)}
+                        </span>
+                      )}
+                    </div>
                     <Input
                       type="date"
                       value={yearForm.startDate}
@@ -828,7 +836,16 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <Label className="text-xs font-semibold">Data de Encerramento (Prevista)</Label>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold">
+                        Data de Encerramento (Prevista)
+                      </Label>
+                      {yearForm.endDate && (
+                        <span className="text-[10px] text-indigo-600 font-mono font-medium">
+                          {formatDate(yearForm.endDate)}
+                        </span>
+                      )}
+                    </div>
                     <Input
                       type="date"
                       value={yearForm.endDate || ''}
@@ -837,9 +854,16 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <Label className="text-xs font-semibold">
-                      Início do Recesso de Meio de Ano
-                    </Label>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold">
+                        Início do Recesso de Meio de Ano
+                      </Label>
+                      {yearForm.winterBreakStart && (
+                        <span className="text-[10px] text-indigo-600 font-mono font-medium">
+                          {formatDate(yearForm.winterBreakStart)}
+                        </span>
+                      )}
+                    </div>
                     <Input
                       type="date"
                       value={yearForm.winterBreakStart || ''}
@@ -850,7 +874,14 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <Label className="text-xs font-semibold">Fim do Recesso de Meio de Ano</Label>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold">Fim do Recesso de Meio de Ano</Label>
+                      {yearForm.winterBreakEnd && (
+                        <span className="text-[10px] text-indigo-600 font-mono font-medium">
+                          {formatDate(yearForm.winterBreakEnd)}
+                        </span>
+                      )}
+                    </div>
                     <Input
                       type="date"
                       value={yearForm.winterBreakEnd || ''}
@@ -859,7 +890,14 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <Label className="text-xs font-semibold">Data da Festa de Natal</Label>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold">Data da Festa de Natal</Label>
+                      {yearForm.christmasDate && (
+                        <span className="text-[10px] text-indigo-600 font-mono font-medium">
+                          {formatDate(yearForm.christmasDate)}
+                        </span>
+                      )}
+                    </div>
                     <Input
                       type="date"
                       value={yearForm.christmasDate || ''}
@@ -883,8 +921,11 @@ export default function SettingsPage() {
                         className="flex items-center justify-between p-2 rounded bg-white dark:bg-slate-900 border text-xs"
                       >
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="font-mono text-[10px]">
-                            {rec.date}
+                          <Badge
+                            variant="outline"
+                            className="font-mono text-[10px] font-semibold text-indigo-700 bg-indigo-50 border-indigo-200"
+                          >
+                            {formatDate(rec.date)}
                           </Badge>
                           <span className="font-medium text-slate-800 dark:text-slate-200">
                             {rec.name}
@@ -906,7 +947,14 @@ export default function SettingsPage() {
                   {/* Formulário para Adicionar Sábado com Recesso */}
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1 items-end">
                     <div className="sm:col-span-4 space-y-1">
-                      <Label className="text-[11px]">Data do Sábado de Recesso</Label>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-[11px]">Data do Sábado de Recesso</Label>
+                        {newRecessDate && (
+                          <span className="text-[10px] text-indigo-600 font-mono">
+                            {formatDate(newRecessDate)}
+                          </span>
+                        )}
+                      </div>
                       <Input
                         type="date"
                         value={newRecessDate}

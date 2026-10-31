@@ -67,23 +67,40 @@ export function classifyClassroomByBirthDate(
 }
 
 /**
- * Formata data para exibição amigável em pt-BR (dd/mm/aaaa)
+ * Formata data para exibição padronizada em pt-BR no formato dd/mm/aaaa.
+ * Trata strings ISO e YYYY-MM-DD diretamente para evitar distorções de fuso horário.
  */
-export function formatDate(dateStr?: string | Date): string {
+export function formatDate(dateStr?: string | Date | null): string {
   if (!dateStr) return ''
+  if (typeof dateStr === 'string') {
+    const clean = dateStr.trim().split('T')[0].split(' ')[0]
+    const match = clean.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+    if (match) {
+      const [, y, m, d] = match
+      return `${d}/${m}/${y}`
+    }
+  }
   const d = typeof dateStr === 'string' ? new Date(dateStr) : dateStr
-  if (isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('pt-BR', { timeZone: 'UTC' })
+  if (!d || isNaN(d.getTime())) return ''
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const year = d.getFullYear()
+  return `${day}/${month}/${year}`
 }
 
 /**
- * Formata data e hora para exibição amigável em pt-BR
+ * Formata data e hora para exibição padronizada em pt-BR no formato dd/mm/aaaa às HH:mm.
  */
-export function formatDateTime(dateStr?: string | Date): string {
+export function formatDateTime(dateStr?: string | Date | null): string {
   if (!dateStr) return ''
   const d = typeof dateStr === 'string' ? new Date(dateStr) : dateStr
-  if (isNaN(d.getTime())) return ''
-  return d.toLocaleString('pt-BR')
+  if (!d || isNaN(d.getTime())) return ''
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const year = d.getFullYear()
+  const hours = String(d.getHours()).padStart(2, '0')
+  const minutes = String(d.getMinutes()).padStart(2, '0')
+  return `${day}/${month}/${year} às ${hours}:${minutes}`
 }
 
 /**
