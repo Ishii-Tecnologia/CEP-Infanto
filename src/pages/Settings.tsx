@@ -279,33 +279,62 @@ export default function SettingsPage() {
   const handleSaveYearAndHolidays = async () => {
     try {
       setSavingYear(true)
-      // Se houver recesso de meio de ano preenchido, assegura que seus sábados estejam na lista
-      const updatedRecesses = [...recessList]
-      if (yearForm.winterBreakStart && yearForm.winterBreakEnd) {
-        // Valida se os sábados do período já estão ou não adicionados
-        const start = new Date(yearForm.winterBreakStart)
-        const end = new Date(yearForm.winterBreakEnd)
-        let cur = new Date(start)
-        while (cur <= end) {
-          if (cur.getUTCDay() === 6) {
-            const dateStr = cur.toISOString().split('T')[0]
-            if (!updatedRecesses.some((r) => r.date === dateStr)) {
-              updatedRecesses.push({
-                date: dateStr,
-                name: 'Férias de Julho / Recesso Escolar',
-              })
-            }
-          }
-          cur.setUTCDate(cur.getUTCDate() + 1)
+      // Normaliza o ano com base na data de início, se fornecida
+      const cleanStartDate = yearForm.startDate ? yearForm.startDate.trim() : ''
+      let derivedYear = yearForm.year || 2027
+      if (cleanStartDate) {
+        const parts = cleanStartDate.split('T')[0].split(' ')[0]
+        if (parts.includes('-')) {
+          const y = parseInt(parts.split('-')[0], 10)
+          if (y && y >= 2000 && y <= 2100) derivedYear = y
+        } else if (parts.includes('/')) {
+          const y = parseInt(parts.split('/')[2], 10)
+          if (y && y >= 2000 && y <= 2100) derivedYear = y
         }
-        updatedRecesses.sort((a, b) => a.date.localeCompare(b.date))
-        setRecessList(updatedRecesses)
       }
 
-      await saveSchoolYearAndRecesses(yearForm, updatedRecesses)
+      const normalizedConfig: SchoolYearConfig = {
+        ...yearForm,
+        year: derivedYear,
+        ageBaseDate: yearForm.ageBaseDate || `${derivedYear}-03-01`,
+      }
+
+      // Se houver recesso de meio de ano preenchido, assegura que seus sábados estejam na lista
+      const updatedRecesses = [...recessList]
+      if (normalizedConfig.winterBreakStart && normalizedConfig.winterBreakEnd) {
+        // Valida se os sábados do período já estão ou não adicionados
+        const cleanStart = normalizedConfig.winterBreakStart.split('T')[0]
+        const cleanEnd = normalizedConfig.winterBreakEnd.split('T')[0]
+        const [sy, sm, sd] = cleanStart.split('-').map(Number)
+        const [ey, em, ed] = cleanEnd.split('-').map(Number)
+        if (sy && sm && sd && ey && em && ed) {
+          const cur = new Date(Date.UTC(sy, sm - 1, sd, 12, 0, 0))
+          const end = new Date(Date.UTC(ey, em - 1, ed, 12, 0, 0))
+          while (cur <= end) {
+            if (cur.getUTCDay() === 6) {
+              const y = cur.getUTCFullYear()
+              const m = String(cur.getUTCMonth() + 1).padStart(2, '0')
+              const d = String(cur.getUTCDate()).padStart(2, '0')
+              const dateStr = `${y}-${m}-${d}`
+              if (!updatedRecesses.some((r) => r.date === dateStr)) {
+                updatedRecesses.push({
+                  date: dateStr,
+                  name: 'Férias de Julho / Recesso Escolar',
+                })
+              }
+            }
+            cur.setUTCDate(cur.getUTCDate() + 1)
+          }
+          updatedRecesses.sort((a, b) => a.date.localeCompare(b.date))
+          setRecessList(updatedRecesses)
+        }
+      }
+
+      setYearForm(normalizedConfig)
+      await saveSchoolYearAndRecesses(normalizedConfig, updatedRecesses)
       toast({
         title: 'Ano Letivo e Feriados Atualizados!',
-        description: `Configurações para ${yearForm.year} salvas com sucesso no Sistema Infanto-CEP.`,
+        description: `Configurações para ${normalizedConfig.year} salvas com sucesso no Sistema Infanto-CEP.`,
       })
     } catch (err: any) {
       toast({
@@ -330,18 +359,40 @@ export default function SettingsPage() {
         return
       }
 
-      // Primeiro salva as configurações
-      await saveSchoolYearAndRecesses(yearForm, recessList)
+      // Normaliza o ano com base na data de início
+      const cleanStartDate = yearForm.startDate.trim()
+      let derivedYear = yearForm.year || 2027
+      if (cleanStartDate) {
+        const parts = cleanStartDate.split('T')[0].split(' ')[0]
+        if (parts.includes('-')) {
+          const y = parseInt(parts.split('-')[0], 10)
+          if (y && y >= 2000 && y <= 2100) derivedYear = y
+        } else if (parts.includes('/')) {
+          const y = parseInt(parts.split('/')[2], 10)
+          if (y && y >= 2000 && y <= 2100) derivedYear = y
+        }
+      }
+
+      const normalizedConfig: SchoolYearConfig = {
+        ...yearForm,
+        year: derivedYear,
+        ageBaseDate: yearForm.ageBaseDate || `${derivedYear}-03-01`,
+      }
+      setYearForm(normalizedConfig)
+
+      // Primeiro salva as configurações no banco
+      await saveSchoolYearAndRecesses(normalizedConfig, recessList)
+
       // Em seguida sincroniza o calendário de sábados de forma segura (preserva temas, planos e presenças)
-      const res = await syncOrRegenerateCalendar(yearForm, recessList)
+      const res = await syncOrRegenerateCalendar(normalizedConfig, recessList)
       toast({
         title: 'Calendário sincronizado com sucesso!',
         description:
           res.action === 'updated_dates'
             ? `As datas dos ${res.count} sábados foram ajustadas às novas janelas sem perder planos ou presenças.`
             : res.action === 'completed_matrix'
-              ? `A matriz de ${res.count} sábados para ${yearForm.year} foi atualizada e completada com sucesso.`
-              : `Foram gerados ${res.count} sábados letivos para o ano ${yearForm.year}.`,
+              ? `A matriz de ${res.count} sábados para ${normalizedConfig.year} foi atualizada e completada com sucesso.`
+              : `Foram gerados ${res.count} sábados letivos para o ano ${normalizedConfig.year}.`,
       })
     } catch (err: any) {
       const errMsg =

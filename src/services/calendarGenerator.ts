@@ -88,16 +88,18 @@ export const DEFAULT_THEMES_30 = [
 ]
 
 // Helper para normalizar qualquer representação de data (ISO YYYY-MM-DD ou BR DD/MM/AAAA)
-function toIsoDateOnly(dateStr?: string): string {
+export function toIsoDateOnly(dateStr?: string): string {
   if (!dateStr) return ''
   const trimmed = dateStr.trim().split('T')[0].split(' ')[0]
   if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
     return trimmed
   }
-  const matchBR = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+  const matchBR = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
   if (matchBR) {
     const [, d, m, y] = matchBR
-    return `${y}-${m}-${d}`
+    const padD = d.padStart(2, '0')
+    const padM = m.padStart(2, '0')
+    return `${y}-${padM}-${padD}`
   }
   return trimmed
 }
@@ -106,7 +108,7 @@ function toIsoDateOnly(dateStr?: string): string {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // Executa operação com retry automático para erros transitórios (ex: 429 Too Many Requests)
-async function withRetry<T>(fn: () => Promise<T>, maxRetries = 4, baseDelay = 350): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 5, baseDelay = 400): Promise<T> {
   let attempt = 0
   while (true) {
     try {
@@ -116,7 +118,7 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 4, baseDelay = 35
       const status = err?.status || err?.statusCode || err?.data?.code
       const isRateLimit = status === 429 || String(err?.message || '').includes('Too Many Requests')
       if (attempt <= maxRetries && isRateLimit) {
-        const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 100
+        const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 150
         await sleep(delay)
         continue
       }
@@ -180,55 +182,153 @@ export async function syncOrRegenerateCalendar(
   recesses: RecessSaturday[],
   onProgress?: (msg: string) => void,
 ) {
-  const year = config.year || 2027
   const startDate = toIsoDateOnly(config.startDate)
   if (!startDate) {
     throw new Error('A data de início das aulas é obrigatória para sincronizar o calendário.')
   }
 
-  const saturdays = generateSaturdaysList(startDate, recesses, 30)
+  // Extrai o ano a partir da data de início normalizada para garantir coerência estrita
+  const parsedStartYear = parseInt(startDate.split('-')[0], 10)
+  const year = config.year || parsedStartYear || 2027
+
+  // Garante que feriados de recessos de meio de ano estejam inclusos na lista
+  const normalizedRecesses: RecessSaturday[] = [...(recesses || [])]
+  if (config.winterBreakStart && config.winterBreakEnd) {
+    const wStart = toIsoDateOnly(config.winterBreakStart)
+    const wEnd = toIsoDateOnly(config.winterBreakEnd)
+    if (wStart && wEnd) {
+      const [sy, sm, sd] = wStart.split('-').map(Number)
+      const [ey, em, ed] = wEnd.split('-').map(Number)
+      const cur = new Date(Date.UTC(sy, sm - 1, sd, 12, 0, 0))
+      const end = new Date(Date.UTC(ey, em - 1, ed, 12, 0, 0))
+      while (cur <= end) {
+        if (cur.getUTCDay() === 6) {
+          const y = cur.getUTCFullYear()
+          const m = String(cur.getUTCMonth() + 1).padStart(2, '0')
+          const d = String(cur.getUTCDate()).padStart(2, '0')
+          const dStr = `${y}-${m}-${d}`
+          if (!normalizedRecesses.some((r) => toIsoDateOnly(r.date) === dStr)) {
+            normalizedRecesses.push({
+              date: dStr,
+              name: 'Férias de Julho / Recesso Escolar',
+            })
+          }
+        }
+        cur.setUTCDate(cur.getUTCDate() + 1)
+      }
+    }
+  }
+
+  const saturdays = generateSaturdaysList(startDate, normalizedRecesses, 30)
 
   // 1. Busca todas as aulas já cadastradas para o ano
-  const existingLessons = await withRetry(() =>
+  let existingLessons = await withRetry(() =>
     pb.collection('lessons').getFullList<Lesson>({
       filter: `year=${year}`,
       sort: 'session_number',
     }),
   )
 
+  // Fallback de compatibilidade: se não encontrou pelo campo year (ex: ano alterado recentemente no formulário),
+  // busca por aulas que já pertençam ao ano da data de início (pelo prefixo da data)
+  if (existingLessons.length === 0 && parsedStartYear) {
+    const lessonsByDatePrefix = await withRetry(() =>
+      pb.collection('lessons').getFullList<Lesson>({
+        filter: `date >= '${parsedStartYear}-01-01' && date <= '${parsedStartYear}-12-31'`,
+        sort: 'session_number',
+      }),
+    )
+    if (lessonsByDatePrefix.length > 0) {
+      existingLessons = lessonsByDatePrefix
+    }
+  }
+
   // Caso A: Se já existem aulas para este ano (completas ou parciais),
-  // atualizamos as datas das aulas existentes respeitando temas, planos e presenças
+  // atualizamos as datas das aulas existentes por session_number preservando temas, planos e presenças,
   // e completamos eventuais sessões faltantes até 30.
   if (existingLessons.length > 0) {
-    onProgress?.(`Ajustando datas para o ano letivo ${year}...`)
+    onProgress?.(`Sincronizando datas dos sábados para o ano ${year}...`)
 
-    // Passo 1: Atualizar datas das aulas existentes
-    for (let i = 0; i < existingLessons.length; i++) {
-      const lesson = existingLessons[i]
-      const sessionIdx = (lesson.session_number || i + 1) - 1
-      const newDate = saturdays[sessionIdx] || saturdays[i] || saturdays[saturdays.length - 1]
-      const isoDate = `${newDate} 00:00:00.000Z`
-
-      const currentLessonDate = toIsoDateOnly(lesson.date)
-      if (currentLessonDate !== newDate) {
-        onProgress?.(`Atualizando Aula #${lesson.session_number} para ${newDate}...`)
-        await withRetry(() =>
-          pb.collection('lessons').update(lesson.id, {
-            date: isoDate,
-          }),
-        )
-        await sleep(100)
+    // Mapeia as aulas existentes por número de sessão (1..30)
+    const existingBySession = new Map<number, Lesson>()
+    for (const l of existingLessons) {
+      if (l.session_number && !existingBySession.has(l.session_number)) {
+        existingBySession.set(l.session_number, l)
       }
     }
 
-    // Passo 2: Se por algum motivo o ano tinha menos de 30 aulas (ex: 26 aulas geradas antes de um rate limit),
+    // Se houver aulas sem session_number, atribui pela ordem existente
+    let fallbackSession = 1
+    for (const l of existingLessons) {
+      if (!l.session_number) {
+        while (existingBySession.has(fallbackSession)) {
+          fallbackSession++
+        }
+        existingBySession.set(fallbackSession, l)
+      }
+    }
+
+    // Para evitar conflito com o índice único (idx_lessons_date UNIQUE) durante rotação de datas,
+    // identificamos quais aulas precisam de nova data.
+    // Usamos uma estratégia de duas fases caso datas existentes colidam com novas datas.
+    const updatesToMake: Array<{ lesson: Lesson; targetDate: string; sessionNum: number }> = []
+
+    for (let i = 0; i < saturdays.length; i++) {
+      const sessionNum = i + 1
+      const lesson = existingBySession.get(sessionNum)
+      if (lesson) {
+        const targetDate = saturdays[i]
+        const currentDate = toIsoDateOnly(lesson.date)
+        if (currentDate !== targetDate || lesson.year !== year) {
+          updatesToMake.push({ lesson, targetDate, sessionNum })
+        }
+      }
+    }
+
+    if (updatesToMake.length > 0) {
+      // Fase 1: se houver risco de colisão de datas entre as próprias aulas que serão alteradas,
+      // temporariamente mudamos a data para uma data fictícia temporária com sufixo do id
+      // apenas se a data de destino já estiver ocupada por outra aula.
+      const allCurrentDatesInDb = new Set(existingLessons.map((l) => toIsoDateOnly(l.date)))
+      const needsTempShift = updatesToMake.some((u) => allCurrentDatesInDb.has(u.targetDate))
+
+      if (needsTempShift) {
+        onProgress?.('Ajustando janelas de datas para evitar colisões...')
+        for (let i = 0; i < updatesToMake.length; i++) {
+          const item = updatesToMake[i]
+          // Atribui uma data temporária única fora do intervalo escolar (ex: ano 2099)
+          const tempDate = `2099-01-${String((i % 28) + 1).padStart(2, '0')} 00:00:00.000Z`
+          await withRetry(() =>
+            pb.collection('lessons').update(item.lesson.id, {
+              date: tempDate,
+            }),
+          )
+          await sleep(60)
+        }
+      }
+
+      // Fase 2: Aplica as datas finais normalizadas
+      for (const item of updatesToMake) {
+        onProgress?.(`Atualizando Aula #${item.sessionNum} para ${item.targetDate}...`)
+        await withRetry(() =>
+          pb.collection('lessons').update(item.lesson.id, {
+            date: `${item.targetDate} 00:00:00.000Z`,
+            year: year,
+            session_number: item.sessionNum,
+          }),
+        )
+        await sleep(80)
+      }
+    }
+
+    // Passo 2: Se o ano tinha menos de 30 aulas (ex: matriz incompleta),
     // completa as sessões faltantes preservando as que já existem.
-    const existingSessionNumbers = new Set(existingLessons.map((l) => l.session_number))
+    const completedSessionNumbers = new Set(existingBySession.keys())
     let createdMissingCount = 0
 
     for (let i = 0; i < saturdays.length; i++) {
       const sessionNum = i + 1
-      if (!existingSessionNumbers.has(sessionNum)) {
+      if (!completedSessionNumbers.has(sessionNum)) {
         createdMissingCount++
         const sDate = saturdays[i]
         const themeInfo = DEFAULT_THEMES_30[i] || {
@@ -262,7 +362,7 @@ export async function syncOrRegenerateCalendar(
               materials: p.materials,
             }),
           )
-          await sleep(60)
+          await sleep(80)
         }
       }
     }
@@ -310,7 +410,7 @@ export async function syncOrRegenerateCalendar(
           materials: p.materials,
         }),
       )
-      await sleep(60)
+      await sleep(80)
     }
   }
 
